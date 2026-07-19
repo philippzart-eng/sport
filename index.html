@@ -41,6 +41,12 @@
   .seg{display:flex;gap:6px;flex-wrap:wrap}
   .seg button{flex:1;min-width:calc(33% - 6px);background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:9px 6px;font-size:13px;font-weight:500}
   .seg button.on{background:var(--panelSoft);border-color:var(--load);color:var(--text)}
+  /* Choice-Chips (Onboarding neu) */
+  .choices{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:20px;padding:9px 15px;font-size:13.5px;font-weight:500}
+  .chip.on{background:var(--load);border-color:var(--load);color:#1A1204}
+  .other-wrap{margin-top:10px}
+  .other-wrap input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:15px}
   .setup-err{color:var(--loadHi);font-size:13px;margin:6px 0 0;display:none}
   .setup-hint{color:var(--dim);font-size:12.5px;line-height:1.5;margin:14px 0 0}
   .primary{background:var(--load);border:none;color:#1A1204;font-weight:700;border-radius:10px;padding:13px 20px;font-size:15px;width:100%}
@@ -109,6 +115,9 @@
   .frow label{font-size:13px;color:var(--dim);width:100px;flex-shrink:0}
   .frow input{flex:1;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);font-size:14px}
   .tag{font-size:12px;background:var(--panelSoft);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
+  .opt-card{background:var(--panelSoft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .opt-card.rec{border-color:var(--load);background:rgba(245,166,35,0.06)}
+  .opt-rec{font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px}
   .hidden{display:none!important}
 </style>
 </head>
@@ -134,75 +143,16 @@
     </div>
 
     <!-- Step 1: Stand -->
-    <div class="steppane hidden" data-step="1">
-      <div class="field">
-        <label>Aktuelles Fitnesslevel</label>
-        <div class="seg" id="s-level">
-          <button data-v="Einsteiger">Einsteiger</button>
-          <button data-v="Fortgeschritten">Fortgeschritten</button>
-          <button data-v="Ambitioniert">Ambitioniert</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Trainingserfahrung (Jahre, Sportarten)</label>
-        <textarea id="s-exp" placeholder="z.B. 3 Jahre Laufen, seit 1 Jahr Krafttraining"></textarea>
-      </div>
-      <div class="field">
-        <label>Wie oft & lange trainierst du aktuell?</label>
-        <textarea id="s-current" placeholder="z.B. 3–4×/Woche, meist 45–60 min"></textarea>
-      </div>
-      <div class="field">
-        <label>Verletzungen / Einschränkungen</label>
-        <textarea id="s-injury" placeholder="z.B. gelegentlich Knieprobleme rechts — oder: keine"></textarea>
-      </div>
-    </div>
+    <div class="steppane hidden" data-step="1" id="pane-1"></div>
 
     <!-- Step 2: Ziele -->
-    <div class="steppane hidden" data-step="2">
-      <div class="field">
-        <label>Hauptziel</label>
-        <textarea id="s-goal" placeholder="z.B. Halbmarathon unter 1:45 & sichtbarer Muskelaufbau"></textarea>
-      </div>
-      <div class="field">
-        <label>Zeithorizont / Zieldatum</label>
-        <input type="text" id="s-deadline" placeholder="z.B. Rennen am 12.10.2026 — oder: 6 Monate">
-      </div>
-      <div class="field">
-        <label>Einheiten pro Woche (realistisch machbar)</label>
-        <div class="seg" id="s-freq">
-          <button data-v="2">2</button><button data-v="3">3</button>
-          <button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button>
-        </div>
-      </div>
-    </div>
+    <div class="steppane hidden" data-step="2" id="pane-2"></div>
 
     <!-- Step 3: Training im Detail -->
-    <div class="steppane hidden" data-step="3">
-      <div class="field">
-        <label>Verhältnis Kraft ↔ Ausdauer</label>
-        <div class="seg" id="s-balance">
-          <button data-v="Kraftfokus">mehr Kraft</button>
-          <button data-v="Ausgewogen">ausgewogen</button>
-          <button data-v="Ausdauerfokus">mehr Ausdauer</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Bevorzugte Aktivitäten</label>
-        <textarea id="s-activities" placeholder="z.B. Laufen, Kettlebells, Radfahren, Schwimmen"></textarea>
-      </div>
-      <div class="field">
-        <label>Bevorzugte Trainingstage</label>
-        <textarea id="s-days" placeholder="z.B. Mo/Mi/Fr/Sa, sonntags Ruhetag"></textarea>
-      </div>
-      <div class="field">
-        <label>Equipment & Trainingsorte</label>
-        <textarea id="s-equip" placeholder="z.B. Fitnessstudio + Kurzhanteln zuhause, Laufstrecke am Fluss"></textarea>
-      </div>
-      <div class="field">
-        <label>Übliche Dauer pro Einheit</label>
-        <input type="text" id="s-duration" placeholder="z.B. 45–75 min">
-      </div>
-    </div>
+    <div class="steppane hidden" data-step="3" id="pane-3"></div>
+
+    <!-- Step 4: Körper & Erholung -->
+    <div class="steppane hidden" data-step="4" id="pane-4"></div>
 
     <div class="row" style="gap:8px;margin-top:8px">
       <button class="ghost hidden" id="s-back">Zurück</button>
@@ -248,7 +198,7 @@ let calCursor, calSelected;
 let chatPending = [];      // ausstehende Bilder im Chat
 let pendingSession = null; // vom Coach erkannt
 
-const TYPE_LABEL = {lauf:'Lauf',kraft:'Kraft',rad:'Rad',schwimmen:'Schwimmen',sonstige:'Training'};
+const TYPE_LABEL = {lauf:'Lauf',kraft:'Kraft',rad:'Rad',schwimmen:'Schwimmen',mobility:'Mobility',sonstige:'Training'};
 const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 
@@ -256,8 +206,16 @@ function uid(){ return (crypto.randomUUID?crypto.randomUUID():'id'+Math.random()
 function iso(d){ return d.toISOString().slice(0,10); }
 function today(){ return new Date(); }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function tageszeit(){ const h=new Date().getHours(); return h<11?'Morgen':h<17?'Tag':h<22?'Abend':'Nacht'; }
+function begruessung(){ const t=tageszeit(); return t==='Morgen'?'Guten Morgen':t==='Abend'?'Guten Abend':t==='Nacht'?'Noch wach':'Hallo'; }
 
+function initCalVars(){
+  const d=today();
+  calCursor={y:d.getFullYear(),m:d.getMonth()};
+  calSelected=iso(d);
+}
 function load(){
+  initCalVars();
   try{ apiKey = localStorage.getItem(LS.key)||''; }catch(e){}
   try{ profile = JSON.parse(localStorage.getItem(LS.profile)||'null'); }catch(e){ profile=null; }
   try{ sessions = JSON.parse(localStorage.getItem(LS.sessions)||'null')||seed(); }catch(e){ sessions=seed(); }
@@ -274,34 +232,74 @@ function persist(){
 // ══════════════ Coach-State (ACWR) ══════════════
 function computeState(){
   const now = today();
-  const loadSince = (since) => sessions
-    .filter(s=>s.status==='done'&&s.load!=null)
+  const done = sessions.filter(s=>s.status==='done'&&s.load!=null);
+  const loadSince = (since) => done
     .filter(s=>(now-new Date(s.date))/86400000<=since)
     .reduce((a,s)=>a+s.load,0);
   const acute = loadSince(7);
   const chronicWeekly = loadSince(28)/4;
-  const acwr = chronicWeekly>0 ? acute/chronicWeekly : null;
-  const recent = sessions.filter(s=>s.status==='done').sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // Wie viele Tage Historie haben wir? ACWR ist erst mit genug Basis aussagekräftig.
+  const recent = sessions.filter(s=>s.status==='done'&&!s.seed).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const oldest = done.length ? done.reduce((min,s)=> new Date(s.date)<new Date(min.date)?s:min ) : null;
+  const historyDays = oldest ? Math.floor((now-new Date(oldest.date))/86400000) : 0;
+  const hasBasis = historyDays >= 21 && done.length >= 6; // ~3 Wochen + genug Einheiten
+
+  const acwr = (hasBasis && chronicWeekly>0) ? acute/chronicWeekly : null;
   const lastRecovery = recent.find(s=>s.hrv!=null||s.sleepH!=null) || null;
+
+  // Tage seit letztem Training
+  const lastDone = recent[0] || null;
+  const daysSinceLast = lastDone ? Math.floor((now - new Date(lastDone.date))/86400000) : null;
+
   let flag='ok';
-  if(acwr!=null&&acwr>1.5) flag='high';
+  if(!hasBasis) flag='building';         // noch zu wenig Daten für ein Urteil
+  else if(acwr!=null&&acwr>1.5) flag='high';
   else if(acwr!=null&&acwr<0.8&&chronicWeekly>0) flag='low';
-  return {acute,chronicWeekly,acwr,lastRecovery,flag};
+
+  return {acute,chronicWeekly,acwr,lastRecovery,flag,daysSinceLast,historyDays};
+}
+// HF-Zonen aus Alter/Ruhe-/Max-HF ableiten. Nutzt die Herzfrequenzreserve
+// (Karvonen): %HRR = (HF - Ruhe) / (Max - Ruhe). Ohne Profildaten Fallback
+// auf grobe Absolutschwellen wie zuvor.
+function hrProfile(){
+  const p=profile||{};
+  const age = parseInt(p.age)||null;
+  const rest = parseInt(p.restingHr)||null;
+  let max = parseInt(p.maxHr)||null;
+  if(!max && age) max = Math.round(208 - 0.7*age); // Tanaka-Formel (genauer als 220-Alter)
+  return {rest, max};
 }
 function estimateLoad(s){
   if(!s.durationMin) return null;
-  let i=3;
-  if(s.avgHr){ if(s.avgHr<115)i=2; else if(s.avgHr<140)i=4; else if(s.avgHr<160)i=6; else i=8; }
+  let i=3; // Default ohne HF
+  if(s.avgHr){
+    const {rest,max}=hrProfile();
+    if(rest && max && max>rest){
+      // %HRR → Intensitätsfaktor 2…9
+      const hrr = Math.max(0, Math.min(1, (s.avgHr - rest)/(max - rest)));
+      if(hrr<0.35) i=2;
+      else if(hrr<0.55) i=4;
+      else if(hrr<0.70) i=6;
+      else if(hrr<0.85) i=8;
+      else i=9;
+    }else{
+      // Fallback: fixe Absolutschwellen
+      if(s.avgHr<115)i=2; else if(s.avgHr<140)i=4; else if(s.avgHr<160)i=6; else i=8;
+    }
+  }
   return Math.round(s.durationMin*i);
 }
 function coachContext(){
   const st=computeState();
-  const recent = sessions.filter(s=>s.status==='done').sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6)
+  const recent = sessions.filter(s=>s.status==='done'&&!s.seed).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6)
     .map(s=>({date:s.date,type:s.type,title:s.title,load:s.load,avgHr:s.avgHr,durationMin:s.durationMin}));
   const planned = sessions.filter(s=>s.status==='planned').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4)
     .map(s=>({date:s.date,type:s.type,title:s.title}));
-  return {heute:iso(today()),acute:Math.round(st.acute),chronicWeekly:Math.round(st.chronicWeekly),
+  return {heute:iso(today()),tageszeit:tageszeit(),acute:Math.round(st.acute),chronicWeekly:Math.round(st.chronicWeekly),
     acwr:st.acwr?st.acwr.toFixed(2):null,flag:st.flag,
+    tageSeitLetztemTraining:st.daysSinceLast,historieTage:st.historyDays,
+    hinweis: st.flag==='building' ? 'Noch keine belastbare 28-Tage-Historie — nutze ACWR NICHT als Argument, plane stattdessen nach Ziel, Wochenfrequenz und Erholung.' : null,
     lastRecovery:st.lastRecovery?{sleepH:st.lastRecovery.sleepH,hrv:st.lastRecovery.hrv}:null,
     letzteEinheiten:recent,geplant:planned,profil:profile};
 }
@@ -325,11 +323,13 @@ async function callClaude(body){
 
 async function aiChat(history){
   const sys = `Du bist ein persönlicher Sport-Coach für gemischtes Training (Kraft + Ausdauer). Sprich Deutsch, locker und konkret, kurze Absätze. Du denkst ganzheitlich: Belastung, Regeneration, Ziele.
+Nutze bei der Einordnung wenn vorhanden Alter, Ruhe-/Maxpuls (für HF-Zonen), Schlaf und Stress aus dem Profil. Bei wenig Schlaf oder hohem Stress eher zurückhaltender planen. Beziehe dich auf konkrete Ziel/Zieldatum, wenn vorhanden.
+Dehnen & Mobilität (Typ "mobility") sind ein eigenständiger, wichtiger Baustein — plane sie regelmäßig aktiv ein (z.B. an Ruhetagen, nach harten Einheiten oder als eigene kurze Einheit), nicht nur als Randnotiz. Richte dich nach der Mobilitäts-Priorität im Profil.
 Nutzerprofil & aktueller Zustand (JSON): ${JSON.stringify(coachContext())}.
 ACWR-Flag: high=Überlastungsrisiko, low=zu wenig Reiz, ok=ausgewogen.
 Wenn eine Nachricht einen Trainings-Screenshot enthält, lies die Werte aus und fasse sie zusammen.
 Wenn aus der Nachricht ein konkret absolviertes ODER zu planendes Training hervorgeht, hänge GANZ AM ENDE eine Zeile an, exakt:
-[[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}[[/SESSION]]
+[[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}[[/SESSION]]
 Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.`;
   const msgs = history.map(m=>({
     role:m.role,
@@ -340,17 +340,20 @@ Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.`;
   return callClaude({system:sys,messages:msgs});
 }
 async function aiExtract(base64,mediaType){
-  const prompt='Du liest einen Trainings-Screenshot (Zepp/Amazfit). Antworte NUR mit JSON, ohne Markdown: {"type":"lauf|kraft|rad|schwimmen|sonstige","title":"...","date":"YYYY-MM-DD oder null","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"kcal":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}. Fehlende Werte = null.';
+  const prompt='Du liest einen Trainings-Screenshot (Zepp/Amazfit). Antworte NUR mit JSON, ohne Markdown: {"type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"...","date":"YYYY-MM-DD oder null","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"kcal":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}. Fehlende Werte = null.';
   const text = await callClaude({max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:prompt}]}]});
   return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
 async function aiPropose(targetDate){
-  const prompt=`Trainingscoach, gemischtes Training (Kraft+Ausdauer). Plane EINE Einheit für ${targetDate}.
+  const prompt=`Trainingscoach, gemischtes Training (Kraft+Ausdauer+Mobility). Erstelle DREI unterschiedliche Trainingsoptionen zur Wahl für ${targetDate}.
 Profil & Zustand (JSON): ${JSON.stringify(coachContext())}.
-Flag: high→leichter/Regeneration, low→aufbauen, ok→normal weiter. Beachte Ziel, Wochenfrequenz, bevorzugte Aktivitäten/Tage, Equipment und Erholung.
-Antworte NUR JSON: {"type":"lauf|kraft|rad|schwimmen|sonstige","title":"kurz","focus":"1 Satz warum","durationMin":Zahl,"intensity":"locker|moderat|hart"}.`;
-  const text = await callClaude({max_tokens:1000,messages:[{role:'user',content:prompt}]});
-  return JSON.parse(text.replace(/```json|```/g,'').trim());
+Flag: high→leichter/Regeneration, low→aufbauen, ok→normal weiter. Beachte Ziel, Wochenfrequenz, bevorzugte Aktivitäten/Tage, Equipment, Erholung (Schlaf/Stress) und Mobilität.
+Die drei Optionen sollen sich sinnvoll unterscheiden (z.B. andere Belastungsart, Dauer oder Intensität) und alle zum heutigen Zustand passen. Wenn klar Erholung dran ist, soll mind. eine Option eine leichte Mobility-/Ruhe-Einheit sein.
+Markiere GENAU EINE Option als deine Empfehlung (recommended:true) und begründe bei jeder ausführlich, warum sie zum aktuellen Zustand passt.
+Antworte NUR JSON (ein Array): [{"type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"kurz","reason":"2-3 Sätze warum genau diese Option jetzt zu dir passt","durationMin":Zahl,"intensity":"locker|moderat|hart","recommended":true|false}, …genau 3 Objekte].`;
+  const text = await callClaude({max_tokens:1500,messages:[{role:'user',content:prompt}]});
+  const arr = JSON.parse(text.replace(/```json|```/g,'').trim());
+  return Array.isArray(arr) ? arr.slice(0,3) : [arr];
 }
 
 function splitSession(reply){
@@ -370,27 +373,114 @@ function readB64(file){
 }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-// ══════════════ Onboarding-Flow ══════════════
-let step=0; const STEPS=4;
-const sel={level:null,freq:null,balance:null};
+// ══════════════ Onboarding-Flow (Chip-basiert) ══════════════
+let step=0; const STEPS=5;
+
+// Fragen-Schema. type: 'single' | 'multi'. other:true ⇒ "Sonstiges" mit Textfeld.
+// Rein freie Felder (Ziel, Datum) bleiben 'text'.
+const Q = {
+  1:[
+    {k:'level',label:'Aktuelles Fitnesslevel',type:'single',opts:['Einsteiger','Fortgeschritten','Ambitioniert']},
+    {k:'experience',label:'Trainingserfahrung',type:'single',other:true,opts:['unter 1 Jahr','1–3 Jahre','3–5 Jahre','über 5 Jahre']},
+    {k:'current',label:'Wie oft trainierst du aktuell?',type:'single',other:true,opts:['1–2×/Woche','3×/Woche','4×/Woche','5+×/Woche']},
+    {k:'injuries',label:'Verletzungen / Einschränkungen',type:'multi',other:true,opts:['Keine','Knie','Rücken','Schulter','Sprunggelenk']}
+  ],
+  2:[
+    {k:'goal',label:'Hauptziel',type:'multi',other:true,opts:['Ausdauer verbessern','Muskelaufbau','Abnehmen','Wettkampf/Rennen','Gesund & fit bleiben','Kraft steigern']},
+    {k:'deadline',label:'Zeithorizont / Zieldatum',type:'text',placeholder:'z.B. Rennen am 12.10.2026 — oder: 6 Monate'},
+    {k:'freqPerWeek',label:'Einheiten pro Woche (machbar)',type:'single',opts:['2','3','4','5','6']}
+  ],
+  3:[
+    {k:'balance',label:'Verhältnis Kraft ↔ Ausdauer',type:'single',opts:['mehr Kraft','ausgewogen','mehr Ausdauer']},
+    {k:'mobilityImportance',label:'Wie wichtig sind dir Dehnen & Mobilität?',type:'single',opts:['sehr wichtig','regelmäßig einbauen','ab und zu','wenig Interesse']},
+    {k:'activities',label:'Bevorzugte Aktivitäten',type:'multi',other:true,opts:['Laufen','Krafttraining','Radfahren','Schwimmen','Kettlebells','Dehnen/Mobility','Yoga']},
+    {k:'days',label:'Bevorzugte Trainingstage',type:'multi',opts:['Mo','Di','Mi','Do','Fr','Sa','So']},
+    {k:'equipment',label:'Equipment & Orte',type:'multi',other:true,opts:['Fitnessstudio','Hanteln zuhause','Nur Körpergewicht','Draußen/Laufstrecke','Schwimmbad']},
+    {k:'sessionDuration',label:'Übliche Dauer pro Einheit',type:'single',other:true,opts:['~30 min','45 min','60 min','75+ min']}
+  ],
+  4:[
+    {k:'age',label:'Alter',type:'single',other:true,opts:['unter 25','25–34','35–44','45–54','55+']},
+    {k:'restingHr',label:'Ruhepuls (morgens, falls bekannt)',type:'single',other:true,opts:['unter 50','50–59','60–69','70+','weiß nicht']},
+    {k:'maxHr',label:'Maximalpuls (falls bekannt)',type:'single',other:true,opts:['weiß nicht','160–169','170–179','180–189','190+']},
+    {k:'sleep',label:'Schlaf typischerweise',type:'single',opts:['unter 6h','6–7h','7–8h','über 8h']},
+    {k:'stress',label:'Aktuelles Stresslevel',type:'single',opts:['niedrig','mittel','hoch']},
+    {k:'recentLoad',label:'Wie hart trainierst du schon seit Wochen?',type:'single',opts:['kaum/Pause','locker','solide','intensiv']}
+  ]
+};
+
+// Antworten: single => String, multi => Array. Zusätzlich answers[k+'__other'] fürs Textfeld.
+const answers = {};
 
 function initSetup(){
   const dots=document.getElementById('dots'); dots.innerHTML='';
   for(let i=0;i<STEPS;i++){ const s=document.createElement('span'); if(i===0)s.className='on'; dots.appendChild(s); }
-  document.querySelectorAll('#s-level button').forEach(b=>b.onclick=()=>{sel.level=b.dataset.v;markSeg('s-level',b);});
-  document.querySelectorAll('#s-freq button').forEach(b=>b.onclick=()=>{sel.freq=b.dataset.v;markSeg('s-freq',b);});
-  document.querySelectorAll('#s-balance button').forEach(b=>b.onclick=()=>{sel.balance=b.dataset.v;markSeg('s-balance',b);});
+  [1,2,3,4].forEach(renderPane);
   document.getElementById('s-next').onclick=nextStep;
   document.getElementById('s-back').onclick=prevStep;
 }
-function markSeg(id,btn){ document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+
+function renderPane(stepNo){
+  const pane=document.getElementById('pane-'+stepNo);
+  pane.innerHTML = Q[stepNo].map(q=>{
+    if(q.type==='text'){
+      return `<div class="field"><label>${q.label}</label>
+        <input type="text" data-k="${q.k}" data-free="1" placeholder="${q.placeholder||''}" value="${esc(answers[q.k]||'')}"></div>`;
+    }
+    const chips = q.opts.map(o=>`<button type="button" class="chip" data-k="${q.k}" data-v="${esc(o)}" onclick="toggleChip(this,'${q.type}')">${esc(o)}</button>`).join('');
+    const other = q.other ? `<button type="button" class="chip" data-k="${q.k}" data-v="__other__" onclick="toggleChip(this,'${q.type}')">Sonstiges…</button>` : '';
+    const otherInput = q.other ? `<div class="other-wrap hidden" id="other-${q.k}"><input type="text" data-k="${q.k}" data-other="1" placeholder="Eigene Angabe…" value="${esc(answers[q.k+'__other']||'')}"></div>` : '';
+    return `<div class="field"><label>${q.label}</label><div class="choices">${chips}${other}</div>${otherInput}</div>`;
+  }).join('');
+}
+
+function toggleChip(btn,type){
+  const k=btn.dataset.k, v=btn.dataset.v, group=btn.parentElement;
+  if(type==='single'){
+    group.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+    btn.classList.add('on');
+    answers[k]=v;
+  }else{ // multi
+    btn.classList.toggle('on');
+    const on=[...group.querySelectorAll('.chip.on')].map(c=>c.dataset.v);
+    answers[k]=on;
+  }
+  // Sonstiges-Textfeld ein-/ausblenden
+  const ow=document.getElementById('other-'+k);
+  if(ow){
+    const show = type==='single' ? v==='__other__' : (answers[k]||[]).includes('__other__');
+    ow.classList.toggle('hidden',!show);
+    if(show) ow.querySelector('input').focus();
+  }
+}
+
 function showStep(){
   document.querySelectorAll('.steppane').forEach(p=>p.classList.toggle('hidden', +p.dataset.step!==step));
   document.querySelectorAll('#dots span').forEach((s,i)=>s.classList.toggle('on',i<=step));
   document.getElementById('s-back').classList.toggle('hidden', step===0);
   document.getElementById('s-next').textContent = step===STEPS-1 ? 'Los geht’s' : 'Weiter';
 }
-function prevStep(){ if(step>0){step--;showStep();} }
+function prevStep(){ if(step>0){ collectStep(); step--; showStep(); } }
+
+// Freitext- und Sonstiges-Felder der aktuellen Pane in answers sichern
+function collectStep(){
+  if(step<1||step>4) return;
+  document.querySelectorAll('#pane-'+step+' input[data-free]').forEach(i=>{ answers[i.dataset.k]=i.value.trim(); });
+  document.querySelectorAll('#pane-'+step+' input[data-other]').forEach(i=>{ answers[i.dataset.k+'__other']=i.value.trim(); });
+}
+
+// Antwort eines Feldes als lesbaren Text (Sonstiges eingesetzt)
+function answerText(k){
+  const v=answers[k];
+  const other=answers[k+'__other'];
+  if(Array.isArray(v)){
+    const parts=v.filter(x=>x!=='__other__');
+    if(v.includes('__other__')&&other) parts.push(other);
+    return parts.join(', ');
+  }
+  if(v==='__other__') return other||'';
+  return v||'';
+}
+
 function nextStep(){
   if(step===0){
     const k=document.getElementById('s-key').value.trim();
@@ -398,20 +488,58 @@ function nextStep(){
     document.getElementById('s-key-err').style.display='none';
     apiKey=k; try{localStorage.setItem(LS.key,k);}catch(e){}
   }
+  collectStep();
   if(step<STEPS-1){ step++; showStep(); return; }
-  // Fertig: Profil sammeln
+  // Fertig: Profil aus answers zusammensetzen
   profile={
-    level:sel.level, experience:val('s-exp'), current:val('s-current'), injuries:val('s-injury'),
-    goal:val('s-goal'), deadline:val('s-deadline'), freqPerWeek:sel.freq,
-    balance:sel.balance, activities:val('s-activities'), days:val('s-days'),
-    equipment:val('s-equip'), sessionDuration:val('s-duration')
+    level:answerText('level'), experience:answerText('experience'), current:answerText('current'), injuries:answerText('injuries'),
+    goal:answerText('goal'), deadline:answerText('deadline'), freqPerWeek:answerText('freqPerWeek'),
+    balance:answerText('balance'), mobilityImportance:answerText('mobilityImportance'), activities:answerText('activities'), days:answerText('days'),
+    equipment:answerText('equipment'), sessionDuration:answerText('sessionDuration'),
+    age:ageNum(answerText('age')), restingHr:hrNum(answerText('restingHr')), maxHr:hrNum(answerText('maxHr')),
+    sleep:answerText('sleep'), stress:answerText('stress'), recentLoad:answerText('recentLoad')
   };
   try{localStorage.setItem(LS.profile,JSON.stringify(profile));}catch(e){}
+  seedHistoryFromProfile();
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   renderAll();
 }
-function val(id){ return document.getElementById(id).value.trim(); }
+
+// Chip-Text → Zahl. "25–34"→30 (Mitte), "55+"→58, "unter 25"→22.
+function ageNum(t){
+  if(!t) return null;
+  const m=t.match(/\d+/g); if(!m) return null;
+  if(t.includes('unter')) return +m[0]-3;
+  if(t.includes('+')) return +m[0]+3;
+  return m.length>1 ? Math.round((+m[0]+ +m[1])/2) : +m[0];
+}
+// "50–59"→55, "unter 50"→46, "70+"→74, "weiß nicht"→null
+function hrNum(t){
+  if(!t||t.includes('weiß')) return null;
+  const m=t.match(/\d+/g); if(!m) return null;
+  if(t.includes('unter')) return +m[0]-4;
+  if(t.includes('+')) return +m[0]+4;
+  return m.length>1 ? Math.round((+m[0]+ +m[1])/2) : +m[0];
+}
+// Grobe chronische Basis seeden, damit ACWR nicht 3 Wochen im "Aufbau" hängt.
+// Legt unsichtbare Referenz-Last der letzten Wochen an (nur fürs Rechnen).
+function seedHistoryFromProfile(){
+  const lvl=(profile.recentLoad||'').toLowerCase();
+  const perDay={'kaum/pause':0,'locker':120,'solide':200,'intensiv':300}[lvl];
+  if(!perDay) return;
+  // 3 zurückliegende Wochen mit je ~ (freq) Einheiten der Referenzlast
+  const freq=parseInt(profile.freqPerWeek)||3;
+  const t=today();
+  for(let d=8; d<=26; d++){
+    // an freq Tagen pro Woche eine Referenzeinheit
+    if((d % 7) < freq){
+      sessions.push({id:uid(),status:'done',date:iso(addDays(t,-d)),type:'sonstige',
+        title:'Referenz (Vorbelastung)',durationMin:null,load:perDay,seed:true});
+    }
+  }
+  persist();
+}
 
 // ══════════════ Rendering: Kalender ══════════════
 function monthGrid(y,m){
@@ -426,32 +554,78 @@ function flagInfo(flag){
   return {
     ok:{c:'var(--done)',t:'Belastung ausgewogen',s:'ausgewogen'},
     high:{c:'var(--loadHi)',t:'Überlastungsrisiko – leichter treten',s:'Überlast'},
-    low:{c:'var(--load)',t:'Unterfordert – Umfang aufbauen',s:'zu wenig'}
+    low:{c:'var(--load)',t:'Unterfordert – Umfang aufbauen',s:'zu wenig'},
+    building:{c:'var(--dim)',t:'Basis wird aufgebaut – noch zu wenig Daten für eine Belastungsampel',s:'Aufbau'}
   }[flag];
 }
 function renderBadge(){
   const st=computeState(); const f=flagInfo(st.flag);
+  const txt = st.flag==='building' ? f.s : `ACWR ${st.acwr?st.acwr.toFixed(2):'–'} · ${f.s}`;
   document.getElementById('badge').innerHTML =
-    `<span class="dot" style="background:${f.c}"></span><span style="color:${f.c}">ACWR ${st.acwr?st.acwr.toFixed(2):'–'} · ${f.s}</span>`;
+    `<span class="dot" style="background:${f.c}"></span><span style="color:${f.c}">${txt}</span>`;
+}
+// Kennzahlen für die Woche, in der 'dateStr' liegt (Mo–So).
+function weekStats(dateStr){
+  const d=new Date(dateStr);
+  const off=(d.getDay()+6)%7;
+  const monday=addDays(d,-off);
+  const days=[]; for(let i=0;i<7;i++) days.push(iso(addDays(monday,i)));
+  const inWeek=s=>days.includes(s.date)&&!s.seed;
+  const done=sessions.filter(s=>s.status==='done'&&inWeek(s));
+  const planned=sessions.filter(s=>s.status==='planned'&&inWeek(s));
+  const kraft=done.filter(s=>s.type==='kraft').length;
+  const ausdauer=done.filter(s=>['lauf','rad','schwimmen'].includes(s.type)).length;
+  const mobility=done.filter(s=>s.type==='mobility').length;
+  const load=done.reduce((a,s)=>a+(s.load||0),0);
+  // Vergleich zur Vorwoche
+  const prevMon=addDays(monday,-7);
+  const prevDays=[]; for(let i=0;i<7;i++) prevDays.push(iso(addDays(prevMon,i)));
+  const prevLoad=sessions.filter(s=>s.status==='done'&&!s.seed&&prevDays.includes(s.date)).reduce((a,s)=>a+(s.load||0),0);
+  const trend = prevLoad>0 ? (load>prevLoad*1.1?'steigend':load<prevLoad*0.9?'fallend':'stabil') : null;
+  return {monday,doneCount:done.length,plannedTotal:done.length+planned.length,kraft,ausdauer,mobility,load,trend,prevLoad};
+}
+function weekCardHTML(dateStr){
+  const w=weekStats(dateStr);
+  const trendTxt = w.trend ? ({steigend:'↑ steigend',fallend:'↓ fallend',stabil:'→ stabil'}[w.trend]) : '';
+  const trendCol = w.trend==='steigend'?'var(--load)':w.trend==='fallend'?'var(--planned)':'var(--dim)';
+  const mondayTxt=w.monday.toLocaleDateString('de-DE',{day:'numeric',month:'short'});
+  return `<div class="statecard" style="margin-bottom:16px">
+    <div class="row between" style="margin-bottom:10px">
+      <span style="font-family:'Archivo';font-weight:700;font-size:15px">Woche ab ${mondayTxt}</span>
+      ${trendTxt?`<span style="font-size:12.5px;color:${trendCol}">Load ${trendTxt}</span>`:''}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v" style="color:var(--done)">${w.doneCount}/${w.plannedTotal}</div><div class="l">erledigt</div></div>
+      <div class="stat"><div class="v" style="color:var(--text)">${w.kraft}·${w.ausdauer}·${w.mobility}</div><div class="l">Kraft·Ausd·Mob</div></div>
+      <div class="stat"><div class="v" style="color:var(--load)">${w.load}</div><div class="l">Wochen-Load</div></div>
+    </div>
+  </div>`;
 }
 function renderCalendar(){
   const st=computeState(); const f=flagInfo(st.flag);
-  const byDate={}; sessions.forEach(s=>{(byDate[s.date]=byDate[s.date]||[]).push(s);});
+  const byDate={}; sessions.filter(s=>!s.seed).forEach(s=>{(byDate[s.date]=byDate[s.date]||[]).push(s);});
   const grid=monthGrid(calCursor.y,calCursor.m);
   const daySessions=byDate[calSelected]||[];
 
+  const lastTxt = st.daysSinceLast==null ? 'noch kein Training'
+    : st.daysSinceLast===0 ? 'heute trainiert'
+    : st.daysSinceLast===1 ? 'gestern' : `vor ${st.daysSinceLast} Tagen`;
   let html = `
   <div class="statecard">
     <div class="stats">
       <div class="stat"><div class="v" style="color:var(--load)">${Math.round(st.acute)}</div><div class="l">Last 7 Tage</div></div>
       <div class="stat"><div class="v" style="color:var(--planned)">${Math.round(st.chronicWeekly)}</div><div class="l">Woche ø (28T)</div></div>
       <div class="stat"><div class="v" style="color:${f.c}">${st.acwr?st.acwr.toFixed(2):'–'}</div><div class="l">ACWR</div></div>
+      <div class="stat"><div class="v" style="color:var(--text)">${st.daysSinceLast==null?'–':st.daysSinceLast}</div><div class="l">Tage seit Training</div></div>
     </div>
     <div class="row" style="gap:8px;margin-top:12px">
       <span class="dot" style="width:8px;height:8px;border-radius:8px;background:${f.c}"></span>
       <span style="font-size:13px;color:${f.c};font-weight:500">${f.t}</span>
     </div>
+    <div class="muted" style="margin-top:6px;font-size:12.5px">Letztes Training: ${lastTxt}</div>
   </div>
+
+  ${weekCardHTML(calSelected)}
 
   <div class="cal-head">
     <button class="navb" onclick="calMove(-1)">‹</button>
@@ -495,15 +669,23 @@ function cardHTML(s){
   if(s.distanceKm!=null)meta.push(`${s.distanceKm} km`);
   if(s.avgHr!=null)meta.push(`ø ${s.avgHr} bpm`);
   if(s.load!=null)meta.push(`<span style="color:var(--load)">Last ${s.load}</span>`);
+  const matched = s.matchedFromPlan ? `<span class="tagpill" style="color:var(--load)">✓ Plan</span>` : '';
+  let vsIst='';
+  if(s.matchedFromPlan && s.plannedDuration!=null && s.durationMin!=null){
+    const d=s.durationMin-s.plannedDuration;
+    vsIst=`<div class="muted" style="margin-top:6px;font-size:12.5px">geplant ${s.plannedDuration} min${s.plannedIntensity?` (${esc(s.plannedIntensity)})`:''} → gemacht ${s.durationMin} min${d?` (${d>0?'+':''}${d})`:''}</div>`;
+  }
   return `<div class="card" style="border-left:3px solid ${done?'var(--done)':'var(--planned)'}">
     <div class="row between">
       <span style="font-weight:600;font-size:15px">${esc(s.title)}</span>
       <div class="row" style="gap:10px">
+        ${matched}
         <span class="tagpill" style="color:${done?'var(--done)':'var(--planned)'}">${done?'erfolgt':'geplant'}</span>
         <button onclick="delSession('${s.id}')" style="background:none;border:none;color:var(--dim);font-size:15px">✕</button>
       </div>
     </div>
     <div class="meta mono">${meta.join('<span></span>')}</div>
+    ${vsIst}
     ${s.focus?`<div class="muted" style="margin-top:6px;line-height:1.4">${esc(s.focus)}</div>`:''}
   </div>`;
 }
@@ -517,7 +699,9 @@ function delSession(id){ sessions=sessions.filter(s=>s.id!==id); persist(); rend
 
 // ══════════════ Rendering: Chat ══════════════
 function renderChat(){
-  const shown = messages.length?messages:[{id:'greet',role:'assistant',text:'Hey! Ich hab deinen Trainingszustand und dein Ziel im Blick. Erzähl mir, wie ein Training war, schick mir einen Screenshot aus Zepp, oder frag mich, was als Nächstes Sinn macht.'}];
+  const st0=computeState();
+  const lastHint = st0.daysSinceLast==null?'' : st0.daysSinceLast===0?' Sehe, du hast heute schon trainiert.' : st0.daysSinceLast>=4?` Dein letztes Training war vor ${st0.daysSinceLast} Tagen – Zeit, wieder reinzukommen?` : '';
+  const shown = messages.length?messages:[{id:'greet',role:'assistant',text:`${begruessung()}! Ich hab deinen Trainingszustand und dein Ziel im Blick.${lastHint} Erzähl mir, wie ein Training war, schick mir einen Screenshot aus Zepp, oder frag mich, was als Nächstes Sinn macht.`}];
   let html=`<div class="chat"><div class="msgs" id="msgs">`;
   shown.forEach(m=>{ html+=bubbleHTML(m); });
   html+=`</div><div id="chat-extra"></div>
@@ -563,8 +747,16 @@ function renderPending(){
     </div></div>`;
 }
 function confirmPending(){
-  sessions.push(pendingSession);
-  messages.push({id:uid(),role:'assistant',text:`Eingetragen: ${pendingSession.title} am ${pendingSession.date} (${pendingSession.status==='done'?'erfolgt':'geplant'}). Findest du jetzt im Kalender.`});
+  const match = pendingSession.status==='done' ? findPlannedMatch(pendingSession) : null;
+  let msg;
+  if(match){
+    mergeIntoPlan(match, pendingSession);
+    msg=`Abgehakt: „${match.title}" am ${match.date} als erledigt markiert. ${planVsIstText(match,pendingSession)}`.trim();
+  }else{
+    sessions.push(pendingSession);
+    msg=`Eingetragen: ${pendingSession.title} am ${pendingSession.date} (${pendingSession.status==='done'?'erfolgt':'geplant'}). Findest du jetzt im Kalender.`;
+  }
+  messages.push({id:uid(),role:'assistant',text:msg});
   pendingSession=null; persist(); renderChat(); renderCalendar(); renderBadge();
 }
 
@@ -617,8 +809,36 @@ function setStatus(id,msg,err){
   else el.innerHTML='';
 }
 
+// Sucht ein geplantes Training, das zur erfolgten Einheit passt (gleicher Tag,
+// gleicher Typ; Typ 'sonstige' matcht jeden). Gibt das geplante Objekt zurück.
+function findPlannedMatch(done){
+  return sessions.find(s=>s.status==='planned' && s.date===done.date &&
+    (s.type===done.type || done.type==='sonstige' || s.type==='sonstige')) || null;
+}
+// Führt erfolgte Werte in das geplante Training ein und markiert es als erledigt.
+function mergeIntoPlan(plan, done){
+  plan.status='done';
+  plan.plannedTitle=plan.title; plan.plannedDuration=plan.durationMin; plan.plannedIntensity=plan.intensity;
+  ['type','durationMin','distanceKm','avgHr','sleepH','hrv','load'].forEach(k=>{ if(done[k]!=null) plan[k]=done[k]; });
+  if(done.title) plan.title=done.title;
+  plan.matchedFromPlan=true;
+}
+function planVsIstText(plan, done){
+  const parts=[];
+  if(plan.plannedDuration!=null && done.durationMin!=null){
+    const d=done.durationMin-plan.plannedDuration;
+    parts.push(`Dauer ${done.durationMin} min (geplant ${plan.plannedDuration}, ${d>=0?'+':''}${d})`);
+  }
+  if(plan.plannedIntensity) parts.push(`geplant: ${plan.plannedIntensity}`);
+  return parts.join(' · ');
+}
+
 // ══════════════ Modals ══════════════
 function openDraftModal(){
+  const match=findPlannedMatch(draft);
+  const matchNote = match ? `<div class="propose" style="margin:0 0 14px"><div class="lab">Passt zu geplantem Training</div>
+    <div style="font-size:13px;color:var(--dim)">„${esc(match.title)}"${match.durationMin!=null?` · geplant ${match.durationMin} min`:''}${match.intensity?` · ${esc(match.intensity)}`:''}</div>
+    <div style="font-size:12.5px;color:var(--dim);margin-top:6px">Beim Speichern wird der Plan als erledigt markiert statt ein zweites Training anzulegen.</div></div>` : '';
   const f=[
     ['Titel','title','text'],['Datum','date','text'],['Dauer (min)','durationMin','num'],
     ['Distanz (km)','distanceKm','num'],['Ø HF','avgHr','num'],['Schlaf (h)','sleepH','num'],['HRV','hrv','num']
@@ -626,9 +846,10 @@ function openDraftModal(){
   const rows=f.map(([lab,k,t])=>`<div class="frow"><label>${lab}</label><input data-k="${k}" data-t="${t}" value="${draft[k]??''}" inputmode="${t==='num'?'decimal':'text'}"></div>`).join('');
   showModal(`<h3>Werte prüfen</h3>
     <p class="muted" style="margin-top:0">Aus dem Screenshot gelesen. Korrigier, was nicht stimmt.</p>
+    ${matchNote}
     ${rows}
     <div class="muted" style="margin:4px 0 14px">Geschätzte Last: <span class="mono" style="color:var(--load)">${draft.load??'–'}</span></div>
-    <button class="primary" onclick="saveDraft()">Als erfolgt speichern</button>`);
+    <button class="primary" onclick="saveDraft()">${match?'Plan als erledigt markieren':'Als erfolgt speichern'}</button>`);
 }
 function saveDraft(){
   document.querySelectorAll('.modal [data-k]').forEach(inp=>{
@@ -636,20 +857,36 @@ function saveDraft(){
     draft[k] = t==='num' ? (v?+v:null) : v;
   });
   draft.load=estimateLoad(draft);
-  sessions.push(draft); calSelected=draft.date; draft=null;
+  const match=findPlannedMatch(draft);
+  if(match){ mergeIntoPlan(match, draft); }
+  else { sessions.push(draft); }
+  calSelected=draft.date; draft=null;
   closeModal(); persist(); renderCalendar(); renderBadge();
 }
-function openProposeModal(p){
-  showModal(`<h3>Coach-Vorschlag</h3>
-    <div class="row" style="gap:8px;margin-bottom:8px">
-      <span class="tag">${TYPE_LABEL[p.type]||p.type}</span><span class="tag">${esc(p.intensity)}</span><span class="tag">${p.durationMin} min</span>
-    </div>
-    <div style="font-family:'Archivo';font-weight:700;font-size:18px;margin-bottom:6px">${esc(p.title)}</div>
-    <p class="muted" style="margin-top:0;line-height:1.5">${esc(p.focus)}</p>
-    <button class="primary" onclick='addProposal(${JSON.stringify(p).replace(/'/g,"&#39;")})'>In Kalender übernehmen</button>`);
+let lastOptions=[];
+function openProposeModal(opts){
+  lastOptions = opts;
+  const cards = opts.map((o,i)=>{
+    const rec = o.recommended;
+    return `<div class="opt-card ${rec?'rec':''}">
+      ${rec?`<div class="opt-rec">★ Empfehlung des Coaches</div>`:''}
+      <div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="tag">${TYPE_LABEL[o.type]||o.type}</span>
+        <span class="tag">${esc(o.intensity||'')}</span>
+        <span class="tag">${o.durationMin||'?'} min</span>
+      </div>
+      <div style="font-family:'Archivo';font-weight:700;font-size:16px;margin-bottom:5px">${esc(o.title)}</div>
+      <p class="muted" style="margin:0 0 12px;line-height:1.5;font-size:13.5px">${esc(o.reason||o.focus||'')}</p>
+      <button class="${rec?'primary':'gbtn'}" style="width:100%" onclick="chooseOption(${i})">Diese Option wählen</button>
+    </div>`;
+  }).join('');
+  showModal(`<h3>Optionen für heute</h3>
+    <p class="muted" style="margin-top:0">Drei Wege für ${new Date(calSelected).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}. Wähl, worauf du Lust hast.</p>
+    ${cards}`);
 }
-function addProposal(p){
-  sessions.push({id:uid(),status:'planned',date:calSelected,type:p.type,title:p.title,durationMin:p.durationMin,focus:p.focus,intensity:p.intensity});
+function chooseOption(i){
+  const o=lastOptions[i]; if(!o)return;
+  sessions.push({id:uid(),status:'planned',date:calSelected,type:o.type,title:o.title,durationMin:o.durationMin,focus:o.reason||o.focus,intensity:o.intensity});
   closeModal(); persist(); renderCalendar(); renderBadge();
 }
 function openProfile(){
@@ -661,10 +898,13 @@ function openProfile(){
       <b style="color:var(--text)">Einheiten/Woche:</b> ${esc(p.freqPerWeek||'–')}<br>
       <b style="color:var(--text)">Level:</b> ${esc(p.level||'–')}<br>
       <b style="color:var(--text)">Balance:</b> ${esc(p.balance||'–')}<br>
+      <b style="color:var(--text)">Mobilität:</b> ${esc(p.mobilityImportance||'–')}<br>
       <b style="color:var(--text)">Aktivitäten:</b> ${esc(p.activities||'–')}<br>
       <b style="color:var(--text)">Tage:</b> ${esc(p.days||'–')}<br>
       <b style="color:var(--text)">Equipment:</b> ${esc(p.equipment||'–')}<br>
-      <b style="color:var(--text)">Einschränkungen:</b> ${esc(p.injuries||'–')}
+      <b style="color:var(--text)">Einschränkungen:</b> ${esc(p.injuries||'–')}<br>
+      <b style="color:var(--text)">Alter:</b> ${esc(p.age||'–')} · <b style="color:var(--text)">Ruhe/Max-HF:</b> ${esc(p.restingHr||'–')}/${esc(p.maxHr||'–')}<br>
+      <b style="color:var(--text)">Schlaf:</b> ${esc(p.sleep||'–')} · <b style="color:var(--text)">Stress:</b> ${esc(p.stress||'–')}
     </div>
     <div class="frow" style="margin-top:16px"><label>API Key</label><input id="edit-key" type="password" value="${esc(apiKey)}" placeholder="sk-ant-…"></div>
     <div class="row" style="gap:8px;margin-top:8px">
