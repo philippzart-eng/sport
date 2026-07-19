@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1420">
 <title>Trainingslogbuch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +36,7 @@
   .setup p.sub{color:var(--dim);font-size:15px;line-height:1.5;margin:0 0 26px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:13px;color:var(--dim);margin-bottom:6px;font-weight:500}
-  .field input,.field textarea,.field select{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:15px}
+  .field input,.field textarea,.field select{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px}
   .field textarea{resize:vertical;min-height:64px}
   .seg{display:flex;gap:6px;flex-wrap:wrap}
   .seg button{flex:1;min-width:calc(33% - 6px);background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:9px 6px;font-size:13px;font-weight:500}
@@ -46,7 +46,7 @@
   .chip{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:20px;padding:9px 15px;font-size:13.5px;font-weight:500}
   .chip.on{background:var(--load);border-color:var(--load);color:#1A1204}
   .other-wrap{margin-top:10px}
-  .other-wrap input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:15px}
+  .other-wrap input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px}
   .setup-err{color:var(--loadHi);font-size:13px;margin:6px 0 0;display:none}
   .setup-hint{color:var(--dim);font-size:12.5px;line-height:1.5;margin:14px 0 0}
   .primary{background:var(--load);border:none;color:#1A1204;font-weight:700;border-radius:10px;padding:13px 20px;font-size:15px;width:100%}
@@ -93,7 +93,7 @@
   .brow.a .bubble{background:var(--panel);border-bottom-left-radius:4px}
   .bimg{width:120px;border-radius:8px;border:1px solid var(--line);margin-bottom:6px;display:block}
   .composer{display:flex;gap:8px;align-items:flex-end}
-  .composer textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px;max-height:120px}
+  .composer textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:16px;max-height:120px}
   .thumbs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
   .thumb{position:relative}
   .thumb img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -113,7 +113,7 @@
   .modal h3{font-family:'Archivo';font-weight:700;font-size:18px;margin:0 0 14px}
   .frow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .frow label{font-size:13px;color:var(--dim);width:100px;flex-shrink:0}
-  .frow input{flex:1;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);font-size:14px}
+  .frow input{flex:1;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);font-size:16px}
   .tag{font-size:12px;background:var(--panelSoft);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
   .opt-card{background:var(--panelSoft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
   .opt-card.rec{border-color:var(--load);background:rgba(245,166,35,0.06)}
@@ -207,6 +207,8 @@ function iso(d){ return d.toISOString().slice(0,10); }
 function today(){ return new Date(); }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function tageszeit(){ const h=new Date().getHours(); return h<11?'Morgen':h<17?'Tag':h<22?'Abend':'Nacht'; }
+function wochentag(d){ return ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date(d).getDay()]; }
+function datumLang(d){ return new Date(d).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 function begruessung(){ const t=tageszeit(); return t==='Morgen'?'Guten Morgen':t==='Abend'?'Guten Abend':t==='Nacht'?'Noch wach':'Hallo'; }
 
 function initCalVars(){
@@ -296,7 +298,7 @@ function coachContext(){
     .map(s=>({date:s.date,type:s.type,title:s.title,load:s.load,avgHr:s.avgHr,durationMin:s.durationMin}));
   const planned = sessions.filter(s=>s.status==='planned').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4)
     .map(s=>({date:s.date,type:s.type,title:s.title}));
-  return {heute:iso(today()),tageszeit:tageszeit(),acute:Math.round(st.acute),chronicWeekly:Math.round(st.chronicWeekly),
+  return {heute:iso(today()),wochentag:wochentag(today()),datumLang:datumLang(today()),tageszeit:tageszeit(),acute:Math.round(st.acute),chronicWeekly:Math.round(st.chronicWeekly),
     acwr:st.acwr?st.acwr.toFixed(2):null,flag:st.flag,
     tageSeitLetztemTraining:st.daysSinceLast,historieTage:st.historyDays,
     hinweis: st.flag==='building' ? 'Noch keine belastbare 28-Tage-Historie — nutze ACWR NICHT als Argument, plane stattdessen nach Ziel, Wochenfrequenz und Erholung.' : null,
@@ -325,6 +327,7 @@ async function aiChat(history){
   const sys = `Du bist ein persönlicher Sport-Coach für gemischtes Training (Kraft + Ausdauer). Sprich Deutsch, locker und konkret, kurze Absätze. Du denkst ganzheitlich: Belastung, Regeneration, Ziele.
 Nutze bei der Einordnung wenn vorhanden Alter, Ruhe-/Maxpuls (für HF-Zonen), Schlaf und Stress aus dem Profil. Bei wenig Schlaf oder hohem Stress eher zurückhaltender planen. Beziehe dich auf konkrete Ziel/Zieldatum, wenn vorhanden.
 Dehnen & Mobilität (Typ "mobility") sind ein eigenständiger, wichtiger Baustein — plane sie regelmäßig aktiv ein (z.B. an Ruhetagen, nach harten Einheiten oder als eigene kurze Einheit), nicht nur als Randnotiz. Richte dich nach der Mobilitäts-Priorität im Profil.
+WICHTIG zu Datum/Wochentag: Nutze immer die Felder "wochentag" und "datumLang" aus dem Zustands-JSON. Rechne Wochentage NIE selbst aus — verlass dich ausschließlich auf diese Angaben.
 Nutzerprofil & aktueller Zustand (JSON): ${JSON.stringify(coachContext())}.
 ACWR-Flag: high=Überlastungsrisiko, low=zu wenig Reiz, ok=ausgewogen.
 Wenn eine Nachricht einen Trainings-Screenshot enthält, lies die Werte aus und fasse sie zusammen.
@@ -345,7 +348,8 @@ async function aiExtract(base64,mediaType){
   return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
 async function aiPropose(targetDate){
-  const prompt=`Trainingscoach, gemischtes Training (Kraft+Ausdauer+Mobility). Erstelle DREI unterschiedliche Trainingsoptionen zur Wahl für ${targetDate}.
+  const prompt=`Trainingscoach, gemischtes Training (Kraft+Ausdauer+Mobility). Erstelle DREI unterschiedliche Trainingsoptionen zur Wahl für ${wochentag(targetDate)}, ${datumLang(targetDate)}.
+WICHTIG: Nutze für Wochentag und Datum exakt diese Angabe (${wochentag(targetDate)}, ${targetDate}). Rechne den Wochentag NICHT selbst aus.
 Profil & Zustand (JSON): ${JSON.stringify(coachContext())}.
 Flag: high→leichter/Regeneration, low→aufbauen, ok→normal weiter. Beachte Ziel, Wochenfrequenz, bevorzugte Aktivitäten/Tage, Equipment, Erholung (Schlaf/Stress) und Mobilität.
 Die drei Optionen sollen sich sinnvoll unterscheiden (z.B. andere Belastungsart, Dauer oder Intensität) und alle zum heutigen Zustand passen. Wenn klar Erholung dran ist, soll mind. eine Option eine leichte Mobility-/Ruhe-Einheit sein.
@@ -716,6 +720,17 @@ function renderChat(){
 
   const ta=document.getElementById('chat-input');
   ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} });
+  ta.addEventListener('paste',async e=>{
+    const items=(e.clipboardData||window.clipboardData)?.items||[];
+    const imgs=[...items].filter(it=>it.type&&it.type.startsWith('image/'));
+    if(imgs.length===0) return; // normaler Text-Paste: nichts tun
+    e.preventDefault();
+    for(const it of imgs){
+      const file=it.getAsFile(); if(!file) continue;
+      try{ chatPending.push({data:await readB64(file),mediaType:file.type||'image/png'}); }catch(err){}
+    }
+    renderThumbs();
+  });
   renderThumbs(); renderPending();
   const msgs=document.getElementById('msgs'); if(msgs) msgs.scrollTop=msgs.scrollHeight;
 }
