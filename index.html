@@ -87,13 +87,22 @@
   .chat{display:flex;flex-direction:column;height:calc(100vh - 210px)}
   .msgs{flex:1;overflow-y:auto;padding-right:2px}
   .bubble{max-width:82%;border:1px solid var(--line);border-radius:14px;padding:10px 13px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+  .chat-opts{margin-top:10px;white-space:normal}
+  .chat-opts-date{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .chat-opt{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;color:var(--text)}
+  .chat-opt.rec{border-color:var(--load);background:rgba(245,166,35,0.06)}
+  .chat-opt-rec{display:block;font-size:10.5px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px}
+  .chat-opt-head{display:block;font-family:'Archivo';font-weight:700;font-size:15px;margin-bottom:3px}
+  .chat-opt-tags{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+  .chat-opt-reason{display:block;font-size:12.5px;color:var(--dim);line-height:1.45}
+  .chat-opts-done{margin-top:10px;font-size:12.5px;color:var(--done);white-space:normal}
   .brow{display:flex;margin-bottom:10px}
   .brow.u{justify-content:flex-end}
   .brow.u .bubble{background:var(--panelSoft);border-bottom-right-radius:4px}
   .brow.a .bubble{background:var(--panel);border-bottom-left-radius:4px}
   .bimg{width:120px;border-radius:8px;border:1px solid var(--line);margin-bottom:6px;display:block}
   .composer{display:flex;gap:8px;align-items:flex-end}
-  .composer textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:16px;max-height:120px}
+  .composer textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:16px;line-height:1.35;min-height:46px;max-height:120px;overflow-y:auto}
   .thumbs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
   .thumb{position:relative}
   .thumb img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -115,8 +124,10 @@
   .frow label{font-size:13px;color:var(--dim);width:100px;flex-shrink:0}
   .frow input{flex:1;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);font-size:16px}
   .tag{font-size:12px;background:var(--panelSoft);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
-  .opt-card{background:var(--panelSoft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .opt-card{background:var(--panelSoft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;color:var(--text)}
   .opt-card.rec{border-color:var(--load);background:rgba(245,166,35,0.06)}
+  .opt-card:active{border-color:var(--load)}
+  .opt-datebar{display:inline-block;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:13px;color:var(--load);font-weight:600;margin-bottom:12px}
   .opt-rec{font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px}
   .hidden{display:none!important}
 </style>
@@ -333,7 +344,10 @@ ACWR-Flag: high=Überlastungsrisiko, low=zu wenig Reiz, ok=ausgewogen.
 Wenn eine Nachricht einen Trainings-Screenshot enthält, lies die Werte aus und fasse sie zusammen.
 Wenn aus der Nachricht ein konkret absolviertes ODER zu planendes Training hervorgeht, hänge GANZ AM ENDE eine Zeile an, exakt:
 [[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}[[/SESSION]]
-Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.`;
+Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.
+Wenn du dem Nutzer mehrere Trainings-OPTIONEN zur Wahl vorschlägst (z.B. Option 1/2/3 für einen Tag), formuliere sie im Text ganz normal UND hänge zusätzlich GANZ AM ENDE (nach einer eventuellen [[SESSION]]-Zeile) einen maschinenlesbaren Block an, exakt:
+[[OPTIONS]]{"date":"YYYY-MM-DD","items":[{"type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"kurz","reason":"1-2 Sätze warum","durationMin":Zahl|null,"intensity":"locker|moderat|hart","recommended":true|false}]}[[/OPTIONS]]
+2 bis 3 Optionen, GENAU EINE mit recommended:true. date ist der Tag, für den die Optionen gelten (nutze das Feld "heute" wenn kein anderer Tag gemeint ist). Nur wenn du wirklich Optionen anbietest, sonst weglassen.`;
   const msgs = history.map(m=>({
     role:m.role,
     content:(m.images&&m.images.length)
@@ -370,6 +384,19 @@ function splitSession(reply){
     if(raw.status==='done') session.load=estimateLoad(raw);
   }catch(e){}
   return {text:reply.replace(m[0],'').trim(),session};
+}
+// Trennt einen [[OPTIONS]]-Block aus der Coach-Antwort.
+function splitOptions(reply){
+  const m = reply.match(/\[\[OPTIONS\]\]([\s\S]*?)\[\[\/OPTIONS\]\]/);
+  if(!m) return {text:reply.trim(),options:null};
+  let options=null;
+  try{
+    const raw=JSON.parse(m[1].trim());
+    if(raw && Array.isArray(raw.items) && raw.items.length){
+      options={date:raw.date||iso(today()), items:raw.items.slice(0,3)};
+    }
+  }catch(e){}
+  return {text:reply.replace(m[0],'').trim(),options};
 }
 
 function readB64(file){
@@ -719,6 +746,8 @@ function renderChat(){
   document.getElementById('view-coach').innerHTML=html;
 
   const ta=document.getElementById('chat-input');
+  const autoGrow=el=>{ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; };
+  ta.addEventListener('input',()=>autoGrow(ta));
   ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} });
   ta.addEventListener('paste',async e=>{
     const items=(e.clipboardData||window.clipboardData)?.items||[];
@@ -737,7 +766,32 @@ function renderChat(){
 function bubbleHTML(m){
   const u=m.role==='user';
   const imgs=(m.images||[]).map(im=>`<img class="bimg" src="data:${im.mediaType};base64,${im.data}">`).join('');
-  return `<div class="brow ${u?'u':'a'}"><div class="bubble">${imgs}${m.text?esc(m.text):''}</div></div>`;
+  let opts='';
+  if(m.options && m.options.items){
+    if(m.options.chosen){
+      opts=`<div class="chat-opts-done">✓ Gewählt: ${esc(m.options.chosen)} — im Kalender eingetragen</div>`;
+    }else{
+      const dateTxt=wochentag(m.options.date)+', '+new Date(m.options.date).toLocaleDateString('de-DE',{day:'numeric',month:'long'});
+      const cards=m.options.items.map((o,i)=>{
+        const rec=o.recommended;
+        return `<button class="chat-opt ${rec?'rec':''}" onclick="chooseChatOption('${m.id}',${i})">
+          ${rec?`<span class="chat-opt-rec">★ Empfehlung</span>`:''}
+          <span class="chat-opt-head">${esc(o.title)}</span>
+          <span class="chat-opt-tags">${TYPE_LABEL[o.type]||o.type} · ${o.durationMin?o.durationMin+' min':''}${o.intensity?' · '+esc(o.intensity):''}</span>
+          ${o.reason?`<span class="chat-opt-reason">${esc(o.reason)}</span>`:''}
+        </button>`;
+      }).join('');
+      opts=`<div class="chat-opts"><div class="chat-opts-date">Optionen für ${dateTxt}</div>${cards}</div>`;
+    }
+  }
+  return `<div class="brow ${u?'u':'a'}"><div class="bubble">${imgs}${m.text?esc(m.text):''}${opts}</div></div>`;
+}
+function chooseChatOption(msgId,i){
+  const m=messages.find(x=>x.id===msgId); if(!m||!m.options)return;
+  const o=m.options.items[i]; if(!o)return;
+  sessions.push({id:uid(),status:'planned',date:m.options.date,type:o.type,title:o.title,durationMin:o.durationMin,focus:o.reason,intensity:o.intensity});
+  m.options.chosen=o.title;
+  persist(); renderChat(); renderCalendar(); renderBadge();
 }
 function renderThumbs(){
   const el=document.getElementById('thumbs'); if(!el)return;
@@ -786,8 +840,11 @@ async function sendChat(){
   setStatus('chat-status','Coach denkt nach…');
   try{
     const reply=await aiChat(history);
-    const {text:clean,session}=splitSession(reply);
-    messages.push({id:uid(),role:'assistant',text:clean});
+    const afterOpts=splitOptions(reply);
+    const {text:clean,session}=splitSession(afterOpts.text);
+    const aMsg={id:uid(),role:'assistant',text:clean};
+    if(afterOpts.options) aMsg.options=afterOpts.options;
+    messages.push(aMsg);
     if(session) pendingSession=session;
     persist(); renderChat();
   }catch(e){ setStatus('chat-status','',e.message); }
@@ -881,22 +938,25 @@ function saveDraft(){
 let lastOptions=[];
 function openProposeModal(opts){
   lastOptions = opts;
-  const cards = opts.map((o,i)=>{
-    const rec = o.recommended;
-    return `<div class="opt-card ${rec?'rec':''}">
+  // Empfohlene Option nach oben sortieren
+  const order = opts.map((o,i)=>({o,i})).sort((a,b)=>(b.o.recommended?1:0)-(a.o.recommended?1:0));
+  const cards = order.map(({o,i})=>{
+    const rec=o.recommended;
+    return `<button class="opt-card ${rec?'rec':''}" style="display:block;width:100%;text-align:left" onclick="chooseOption(${i})">
       ${rec?`<div class="opt-rec">★ Empfehlung des Coaches</div>`:''}
-      <div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:wrap">
+      <div style="font-family:'Archivo';font-weight:700;font-size:16px;margin-bottom:6px">${esc(o.title)}</div>
+      <div class="row" style="gap:6px;margin-bottom:8px;flex-wrap:wrap">
         <span class="tag">${TYPE_LABEL[o.type]||o.type}</span>
-        <span class="tag">${esc(o.intensity||'')}</span>
-        <span class="tag">${o.durationMin||'?'} min</span>
+        ${o.intensity?`<span class="tag">${esc(o.intensity)}</span>`:''}
+        ${o.durationMin?`<span class="tag">${o.durationMin} min</span>`:''}
       </div>
-      <div style="font-family:'Archivo';font-weight:700;font-size:16px;margin-bottom:5px">${esc(o.title)}</div>
-      <p class="muted" style="margin:0 0 12px;line-height:1.5;font-size:13.5px">${esc(o.reason||o.focus||'')}</p>
-      <button class="${rec?'primary':'gbtn'}" style="width:100%" onclick="chooseOption(${i})">Diese Option wählen</button>
-    </div>`;
+      <p class="muted" style="margin:0;line-height:1.5;font-size:13.5px">${esc(o.reason||o.focus||'')}</p>
+    </button>`;
   }).join('');
+  const dateTxt=wochentag(calSelected)+', '+new Date(calSelected).toLocaleDateString('de-DE',{day:'numeric',month:'long'});
   showModal(`<h3>Optionen für heute</h3>
-    <p class="muted" style="margin-top:0">Drei Wege für ${new Date(calSelected).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}. Wähl, worauf du Lust hast.</p>
+    <div class="opt-datebar">${dateTxt}</div>
+    <p class="muted" style="margin:0 0 14px">Tipp auf die Option, die du machen willst — sie landet direkt im Kalender.</p>
     ${cards}`);
 }
 function chooseOption(i){
