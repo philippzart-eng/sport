@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F1420">
+<title>Trainingslogbuch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1420; --panel:#171E2E; --panelSoft:#1E2739; --line:#2A3549;
+    --text:#E8ECF4; --dim:#8A97AE; --planned:#5B7BB4; --done:#4ADE9E;
+    --load:#F5A623; --loadHi:#F5645A;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif}
+  .mono{font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+  button:focus-visible{outline:2px solid var(--load);outline-offset:2px}
+  input,textarea{font-family:inherit}
+  a{color:var(--load)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  .wrap{max-width:720px;margin:0 auto;padding:24px 18px 96px}
+  h1.title{font-family:'Archivo';font-weight:800;font-size:24px;letter-spacing:-.5px;margin:0}
+  .row{display:flex;align-items:center}
+  .between{justify-content:space-between}
+
+  /* Setup / Onboarding */
+  .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto}
+  .setup{max-width:460px;margin:0 auto;padding:48px 22px 60px}
+  .logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--load),#E8863C);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px}
+  .setup h2{font-family:'Archivo';font-weight:800;font-size:26px;margin:0 0 6px}
+  .setup p.sub{color:var(--dim);font-size:15px;line-height:1.5;margin:0 0 26px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;color:var(--dim);margin-bottom:6px;font-weight:500}
+  .field input,.field textarea,.field select{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:15px}
+  .field textarea{resize:vertical;min-height:64px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:calc(33% - 6px);background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:9px 6px;font-size:13px;font-weight:500}
+  .seg button.on{background:var(--panelSoft);border-color:var(--load);color:var(--text)}
+  .setup-err{color:var(--loadHi);font-size:13px;margin:6px 0 0;display:none}
+  .setup-hint{color:var(--dim);font-size:12.5px;line-height:1.5;margin:14px 0 0}
+  .primary{background:var(--load);border:none;color:#1A1204;font-weight:700;border-radius:10px;padding:13px 20px;font-size:15px;width:100%}
+  .step-dots{display:flex;gap:6px;margin-bottom:22px}
+  .step-dots span{height:4px;flex:1;border-radius:4px;background:var(--line)}
+  .step-dots span.on{background:var(--load)}
+  .ghost{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px 14px;font-size:14px}
+
+  /* App */
+  .badge{display:flex;align-items:center;gap:6px;font-size:13px}
+  .badge .dot{width:8px;height:8px;border-radius:8px}
+  .statecard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap}
+  .stat .v{font-family:'Archivo';font-weight:800;font-size:24px}
+  .stat .l{font-size:11px;color:var(--dim);margin-top:2px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cal-head .m{font-family:'Archivo';font-weight:700;font-size:16px}
+  .navb{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;width:34px;height:34px;font-size:18px}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .wd{text-align:center;font-size:11px;color:var(--dim);padding:2px 0}
+  .day{aspect-ratio:1;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:5px;display:flex;flex-direction:column;align-items:flex-start;overflow:hidden}
+  .day.sel{border-color:var(--load);background:var(--panelSoft)}
+  .day .dn{font-size:12px}
+  .day .dots{display:flex;gap:3px;margin-top:auto;flex-wrap:wrap}
+  .day .d{width:6px;height:6px;border-radius:6px}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--dim)}
+  .legend .d{display:inline-block;width:8px;height:8px;border-radius:8px;margin-right:5px}
+  h2.day-title{font-family:'Archivo';font-weight:700;font-size:16px;margin:0}
+  .btnbar{display:flex;gap:8px}
+  .sbtn{background:var(--load);border:none;color:#1A1204;font-weight:600;border-radius:8px;padding:8px 14px;font-size:13px}
+  .gbtn{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  .card .meta{display:flex;gap:14px;margin-top:6px;font-size:13px;color:var(--dim);flex-wrap:wrap}
+  .tagpill{font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .muted{color:var(--dim);font-size:14px}
+
+  /* Chat */
+  .chat{display:flex;flex-direction:column;height:calc(100vh - 210px)}
+  .msgs{flex:1;overflow-y:auto;padding-right:2px}
+  .bubble{max-width:82%;border:1px solid var(--line);border-radius:14px;padding:10px 13px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+  .brow{display:flex;margin-bottom:10px}
+  .brow.u{justify-content:flex-end}
+  .brow.u .bubble{background:var(--panelSoft);border-bottom-right-radius:4px}
+  .brow.a .bubble{background:var(--panel);border-bottom-left-radius:4px}
+  .bimg{width:120px;border-radius:8px;border:1px solid var(--line);margin-bottom:6px;display:block}
+  .composer{display:flex;gap:8px;align-items:flex-end}
+  .composer textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--text);font-size:14px;max-height:120px}
+  .thumbs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .thumb{position:relative}
+  .thumb img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+  .thumb button{position:absolute;top:-6px;right:-6px;background:var(--loadHi);border:none;color:#fff;border-radius:10px;width:18px;height:18px;font-size:11px}
+  .propose{background:var(--panelSoft);border:1px solid var(--load);border-radius:12px;padding:14px;margin:8px 0}
+  .propose .lab{font-size:12px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .err{color:var(--loadHi);font-size:13px;padding:8px 12px;background:rgba(245,100,90,.1);border-radius:8px;margin-bottom:10px}
+
+  /* Tabs */
+  .tabs{position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+  .tab{flex:1;max-width:200px;background:transparent;border:1px solid var(--line);color:var(--dim);border-radius:10px;padding:10px 0;font-size:14px;font-weight:600}
+  .tab.on{background:var(--panelSoft);border-color:var(--load);color:var(--text)}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(8,11,18,.7);display:flex;align-items:flex-end;justify-content:center;z-index:60;padding:12px}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto}
+  .modal h3{font-family:'Archivo';font-weight:700;font-size:18px;margin:0 0 14px}
+  .frow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .frow label{font-size:13px;color:var(--dim);width:100px;flex-shrink:0}
+  .frow input{flex:1;background:var(--panelSoft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);font-size:14px}
+  .tag{font-size:12px;background:var(--panelSoft);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP / ONBOARDING ══ -->
+<div class="overlay" id="setup">
+  <div class="setup">
+    <div class="logo">🏃</div>
+    <h2>Trainingslogbuch</h2>
+    <p class="sub">Dein Sport-Coach, der die ganze Woche im Blick behält — Belastung, Erholung und Ziele.</p>
+
+    <div class="step-dots" id="dots"></div>
+
+    <!-- Step 0: API Key -->
+    <div class="steppane" data-step="0">
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <input type="password" id="s-key" placeholder="sk-ant-api03-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <div class="setup-err" id="s-key-err">Bitte einen gültigen API Key eingeben (beginnt mit sk-ant-)</div>
+      </div>
+      <p class="setup-hint">API Key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys.<br>Empfehlung: Spending Limit auf 5–10 $/Monat setzen. Der Key bleibt nur in deinem Browser.</p>
+    </div>
+
+    <!-- Step 1: Stand -->
+    <div class="steppane hidden" data-step="1">
+      <div class="field">
+        <label>Aktuelles Fitnesslevel</label>
+        <div class="seg" id="s-level">
+          <button data-v="Einsteiger">Einsteiger</button>
+          <button data-v="Fortgeschritten">Fortgeschritten</button>
+          <button data-v="Ambitioniert">Ambitioniert</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Trainingserfahrung (Jahre, Sportarten)</label>
+        <textarea id="s-exp" placeholder="z.B. 3 Jahre Laufen, seit 1 Jahr Krafttraining"></textarea>
+      </div>
+      <div class="field">
+        <label>Wie oft & lange trainierst du aktuell?</label>
+        <textarea id="s-current" placeholder="z.B. 3–4×/Woche, meist 45–60 min"></textarea>
+      </div>
+      <div class="field">
+        <label>Verletzungen / Einschränkungen</label>
+        <textarea id="s-injury" placeholder="z.B. gelegentlich Knieprobleme rechts — oder: keine"></textarea>
+      </div>
+    </div>
+
+    <!-- Step 2: Ziele -->
+    <div class="steppane hidden" data-step="2">
+      <div class="field">
+        <label>Hauptziel</label>
+        <textarea id="s-goal" placeholder="z.B. Halbmarathon unter 1:45 & sichtbarer Muskelaufbau"></textarea>
+      </div>
+      <div class="field">
+        <label>Zeithorizont / Zieldatum</label>
+        <input type="text" id="s-deadline" placeholder="z.B. Rennen am 12.10.2026 — oder: 6 Monate">
+      </div>
+      <div class="field">
+        <label>Einheiten pro Woche (realistisch machbar)</label>
+        <div class="seg" id="s-freq">
+          <button data-v="2">2</button><button data-v="3">3</button>
+          <button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Training im Detail -->
+    <div class="steppane hidden" data-step="3">
+      <div class="field">
+        <label>Verhältnis Kraft ↔ Ausdauer</label>
+        <div class="seg" id="s-balance">
+          <button data-v="Kraftfokus">mehr Kraft</button>
+          <button data-v="Ausgewogen">ausgewogen</button>
+          <button data-v="Ausdauerfokus">mehr Ausdauer</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Bevorzugte Aktivitäten</label>
+        <textarea id="s-activities" placeholder="z.B. Laufen, Kettlebells, Radfahren, Schwimmen"></textarea>
+      </div>
+      <div class="field">
+        <label>Bevorzugte Trainingstage</label>
+        <textarea id="s-days" placeholder="z.B. Mo/Mi/Fr/Sa, sonntags Ruhetag"></textarea>
+      </div>
+      <div class="field">
+        <label>Equipment & Trainingsorte</label>
+        <textarea id="s-equip" placeholder="z.B. Fitnessstudio + Kurzhanteln zuhause, Laufstrecke am Fluss"></textarea>
+      </div>
+      <div class="field">
+        <label>Übliche Dauer pro Einheit</label>
+        <input type="text" id="s-duration" placeholder="z.B. 45–75 min">
+      </div>
+    </div>
+
+    <div class="row" style="gap:8px;margin-top:8px">
+      <button class="ghost hidden" id="s-back">Zurück</button>
+      <button class="primary" id="s-next">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" class="hidden">
+  <div class="wrap">
+    <div class="row between" style="margin-bottom:16px;gap:10px">
+      <h1 class="title">Trainingslogbuch</h1>
+      <div class="row" style="gap:12px">
+        <div class="badge" id="badge"></div>
+        <button class="navb" id="profile-btn" title="Profil" style="width:auto;padding:0 10px;font-size:13px;color:var(--dim)">⚙</button>
+      </div>
+    </div>
+
+    <div id="view-kalender"></div>
+    <div id="view-coach" class="hidden"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-kalender" onclick="setTab('kalender')">Kalender</button>
+    <button class="tab" id="tab-coach" onclick="setTab('coach')">Coach</button>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<input type="file" id="file-cal" accept="image/*" class="hidden">
+<input type="file" id="file-chat" accept="image/*" multiple class="hidden">
+
+<script>
+// ══════════════ State & Persistenz ══════════════
+const LS = { key:'sc_apikey', sessions:'sc_sessions', messages:'sc_messages', profile:'sc_profile' };
+let apiKey = '';
+let profile = null;
+let sessions = [];
+let messages = [];
+let tab = 'kalender';
+let calCursor, calSelected;
+let chatPending = [];      // ausstehende Bilder im Chat
+let pendingSession = null; // vom Coach erkannt
+
+const TYPE_LABEL = {lauf:'Lauf',kraft:'Kraft',rad:'Rad',schwimmen:'Schwimmen',sonstige:'Training'};
+const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+function uid(){ return (crypto.randomUUID?crypto.randomUUID():'id'+Math.random().toString(36).slice(2)); }
+function iso(d){ return d.toISOString().slice(0,10); }
+function today(){ return new Date(); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+
+function load(){
+  try{ apiKey = localStorage.getItem(LS.key)||''; }catch(e){}
+  try{ profile = JSON.parse(localStorage.getItem(LS.profile)||'null'); }catch(e){ profile=null; }
+  try{ sessions = JSON.parse(localStorage.getItem(LS.sessions)||'null')||seed(); }catch(e){ sessions=seed(); }
+  try{ messages = JSON.parse(localStorage.getItem(LS.messages)||'[]'); }catch(e){ messages=[]; }
+}
+function persist(){
+  try{
+    localStorage.setItem(LS.sessions, JSON.stringify(sessions));
+    localStorage.setItem(LS.messages, JSON.stringify(messages));
+    if(profile) localStorage.setItem(LS.profile, JSON.stringify(profile));
+  }catch(e){}
+}
+
+// ══════════════ Coach-State (ACWR) ══════════════
+function computeState(){
+  const now = today();
+  const loadSince = (since) => sessions
+    .filter(s=>s.status==='done'&&s.load!=null)
+    .filter(s=>(now-new Date(s.date))/86400000<=since)
+    .reduce((a,s)=>a+s.load,0);
+  const acute = loadSince(7);
+  const chronicWeekly = loadSince(28)/4;
+  const acwr = chronicWeekly>0 ? acute/chronicWeekly : null;
+  const recent = sessions.filter(s=>s.status==='done').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const lastRecovery = recent.find(s=>s.hrv!=null||s.sleepH!=null) || null;
+  let flag='ok';
+  if(acwr!=null&&acwr>1.5) flag='high';
+  else if(acwr!=null&&acwr<0.8&&chronicWeekly>0) flag='low';
+  return {acute,chronicWeekly,acwr,lastRecovery,flag};
+}
+function estimateLoad(s){
+  if(!s.durationMin) return null;
+  let i=3;
+  if(s.avgHr){ if(s.avgHr<115)i=2; else if(s.avgHr<140)i=4; else if(s.avgHr<160)i=6; else i=8; }
+  return Math.round(s.durationMin*i);
+}
+function coachContext(){
+  const st=computeState();
+  const recent = sessions.filter(s=>s.status==='done').sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6)
+    .map(s=>({date:s.date,type:s.type,title:s.title,load:s.load,avgHr:s.avgHr,durationMin:s.durationMin}));
+  const planned = sessions.filter(s=>s.status==='planned').sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4)
+    .map(s=>({date:s.date,type:s.type,title:s.title}));
+  return {heute:iso(today()),acute:Math.round(st.acute),chronicWeekly:Math.round(st.chronicWeekly),
+    acwr:st.acwr?st.acwr.toFixed(2):null,flag:st.flag,
+    lastRecovery:st.lastRecovery?{sleepH:st.lastRecovery.sleepH,hrv:st.lastRecovery.hrv}:null,
+    letzteEinheiten:recent,geplant:planned,profil:profile};
+}
+
+// ══════════════ API-Aufrufe (Key im Browser, wie in deiner App) ══════════════
+async function callClaude(body){
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(Object.assign({model:'claude-sonnet-4-5',max_tokens:1200},body))
+  });
+  const data = await res.json();
+  if(data.error){
+    if(res.status===401) throw new Error('API Key ungültig. Bitte im Profil (⚙) aktualisieren.');
+    if(res.status===429) throw new Error('Limit erreicht — kurz warten und nochmal.');
+    if(res.status===529) throw new Error('Server überlastet — gleich nochmal.');
+    throw new Error(data.error.message||('Fehler '+res.status));
+  }
+  return (data.content||[]).filter(i=>i.type==='text').map(i=>i.text).join('');
+}
+
+async function aiChat(history){
+  const sys = `Du bist ein persönlicher Sport-Coach für gemischtes Training (Kraft + Ausdauer). Sprich Deutsch, locker und konkret, kurze Absätze. Du denkst ganzheitlich: Belastung, Regeneration, Ziele.
+Nutzerprofil & aktueller Zustand (JSON): ${JSON.stringify(coachContext())}.
+ACWR-Flag: high=Überlastungsrisiko, low=zu wenig Reiz, ok=ausgewogen.
+Wenn eine Nachricht einen Trainings-Screenshot enthält, lies die Werte aus und fasse sie zusammen.
+Wenn aus der Nachricht ein konkret absolviertes ODER zu planendes Training hervorgeht, hänge GANZ AM ENDE eine Zeile an, exakt:
+[[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}[[/SESSION]]
+Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.`;
+  const msgs = history.map(m=>({
+    role:m.role,
+    content:(m.images&&m.images.length)
+      ? m.images.map(im=>({type:'image',source:{type:'base64',media_type:im.mediaType,data:im.data}})).concat([{type:'text',text:m.text||'(Screenshot)'}])
+      : m.text
+  }));
+  return callClaude({system:sys,messages:msgs});
+}
+async function aiExtract(base64,mediaType){
+  const prompt='Du liest einen Trainings-Screenshot (Zepp/Amazfit). Antworte NUR mit JSON, ohne Markdown: {"type":"lauf|kraft|rad|schwimmen|sonstige","title":"...","date":"YYYY-MM-DD oder null","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"kcal":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}. Fehlende Werte = null.';
+  const text = await callClaude({max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:prompt}]}]});
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+async function aiPropose(targetDate){
+  const prompt=`Trainingscoach, gemischtes Training (Kraft+Ausdauer). Plane EINE Einheit für ${targetDate}.
+Profil & Zustand (JSON): ${JSON.stringify(coachContext())}.
+Flag: high→leichter/Regeneration, low→aufbauen, ok→normal weiter. Beachte Ziel, Wochenfrequenz, bevorzugte Aktivitäten/Tage, Equipment und Erholung.
+Antworte NUR JSON: {"type":"lauf|kraft|rad|schwimmen|sonstige","title":"kurz","focus":"1 Satz warum","durationMin":Zahl,"intensity":"locker|moderat|hart"}.`;
+  const text = await callClaude({max_tokens:1000,messages:[{role:'user',content:prompt}]});
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+function splitSession(reply){
+  const m = reply.match(/\[\[SESSION\]\]([\s\S]*?)\[\[\/SESSION\]\]/);
+  if(!m) return {text:reply.trim(),session:null};
+  let session=null;
+  try{
+    const raw=JSON.parse(m[1].trim());
+    session=Object.assign({id:uid()},raw);
+    if(raw.status==='done') session.load=estimateLoad(raw);
+  }catch(e){}
+  return {text:reply.replace(m[0],'').trim(),session};
+}
+
+function readB64(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=()=>rej(new Error('read')); r.readAsDataURL(file); });
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ══════════════ Onboarding-Flow ══════════════
+let step=0; const STEPS=4;
+const sel={level:null,freq:null,balance:null};
+
+function initSetup(){
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<STEPS;i++){ const s=document.createElement('span'); if(i===0)s.className='on'; dots.appendChild(s); }
+  document.querySelectorAll('#s-level button').forEach(b=>b.onclick=()=>{sel.level=b.dataset.v;markSeg('s-level',b);});
+  document.querySelectorAll('#s-freq button').forEach(b=>b.onclick=()=>{sel.freq=b.dataset.v;markSeg('s-freq',b);});
+  document.querySelectorAll('#s-balance button').forEach(b=>b.onclick=()=>{sel.balance=b.dataset.v;markSeg('s-balance',b);});
+  document.getElementById('s-next').onclick=nextStep;
+  document.getElementById('s-back').onclick=prevStep;
+}
+function markSeg(id,btn){ document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function showStep(){
+  document.querySelectorAll('.steppane').forEach(p=>p.classList.toggle('hidden', +p.dataset.step!==step));
+  document.querySelectorAll('#dots span').forEach((s,i)=>s.classList.toggle('on',i<=step));
+  document.getElementById('s-back').classList.toggle('hidden', step===0);
+  document.getElementById('s-next').textContent = step===STEPS-1 ? 'Los geht’s' : 'Weiter';
+}
+function prevStep(){ if(step>0){step--;showStep();} }
+function nextStep(){
+  if(step===0){
+    const k=document.getElementById('s-key').value.trim();
+    if(!k.startsWith('sk-ant-')){ document.getElementById('s-key-err').style.display='block'; return; }
+    document.getElementById('s-key-err').style.display='none';
+    apiKey=k; try{localStorage.setItem(LS.key,k);}catch(e){}
+  }
+  if(step<STEPS-1){ step++; showStep(); return; }
+  // Fertig: Profil sammeln
+  profile={
+    level:sel.level, experience:val('s-exp'), current:val('s-current'), injuries:val('s-injury'),
+    goal:val('s-goal'), deadline:val('s-deadline'), freqPerWeek:sel.freq,
+    balance:sel.balance, activities:val('s-activities'), days:val('s-days'),
+    equipment:val('s-equip'), sessionDuration:val('s-duration')
+  };
+  try{localStorage.setItem(LS.profile,JSON.stringify(profile));}catch(e){}
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  renderAll();
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+
+// ══════════════ Rendering: Kalender ══════════════
+function monthGrid(y,m){
+  const first=new Date(y,m,1);
+  const off=(first.getDay()+6)%7;
+  const start=addDays(first,-off);
+  const weeks=[];
+  for(let w=0;w<6;w++){ const row=[]; for(let d=0;d<7;d++) row.push(addDays(start,w*7+d)); weeks.push(row); }
+  return weeks;
+}
+function flagInfo(flag){
+  return {
+    ok:{c:'var(--done)',t:'Belastung ausgewogen',s:'ausgewogen'},
+    high:{c:'var(--loadHi)',t:'Überlastungsrisiko – leichter treten',s:'Überlast'},
+    low:{c:'var(--load)',t:'Unterfordert – Umfang aufbauen',s:'zu wenig'}
+  }[flag];
+}
+function renderBadge(){
+  const st=computeState(); const f=flagInfo(st.flag);
+  document.getElementById('badge').innerHTML =
+    `<span class="dot" style="background:${f.c}"></span><span style="color:${f.c}">ACWR ${st.acwr?st.acwr.toFixed(2):'–'} · ${f.s}</span>`;
+}
+function renderCalendar(){
+  const st=computeState(); const f=flagInfo(st.flag);
+  const byDate={}; sessions.forEach(s=>{(byDate[s.date]=byDate[s.date]||[]).push(s);});
+  const grid=monthGrid(calCursor.y,calCursor.m);
+  const daySessions=byDate[calSelected]||[];
+
+  let html = `
+  <div class="statecard">
+    <div class="stats">
+      <div class="stat"><div class="v" style="color:var(--load)">${Math.round(st.acute)}</div><div class="l">Last 7 Tage</div></div>
+      <div class="stat"><div class="v" style="color:var(--planned)">${Math.round(st.chronicWeekly)}</div><div class="l">Woche ø (28T)</div></div>
+      <div class="stat"><div class="v" style="color:${f.c}">${st.acwr?st.acwr.toFixed(2):'–'}</div><div class="l">ACWR</div></div>
+    </div>
+    <div class="row" style="gap:8px;margin-top:12px">
+      <span class="dot" style="width:8px;height:8px;border-radius:8px;background:${f.c}"></span>
+      <span style="font-size:13px;color:${f.c};font-weight:500">${f.t}</span>
+    </div>
+  </div>
+
+  <div class="cal-head">
+    <button class="navb" onclick="calMove(-1)">‹</button>
+    <div class="m">${MONTHS[calCursor.m]} ${calCursor.y}</div>
+    <button class="navb" onclick="calMove(1)">›</button>
+  </div>
+  <div class="grid">${WEEKDAYS.map(d=>`<div class="wd">${d}</div>`).join('')}`;
+
+  grid.flat().forEach(d=>{
+    const key=iso(d), inM=d.getMonth()===calCursor.m, items=byDate[key]||[];
+    const isToday=key===iso(today()), isSel=key===calSelected;
+    const dots=items.slice(0,3).map(s=>`<span class="d" style="${s.status==='done'?`background:var(--done)`:`border:1.5px solid var(--planned)`}"></span>`).join('');
+    html+=`<button class="day ${isSel?'sel':''}" style="opacity:${inM?1:.35}" onclick="calSelect('${key}')">
+      <span class="dn mono" style="color:${isToday?'var(--load)':'var(--text)'};font-weight:${isToday?700:400}">${d.getDate()}</span>
+      <span class="dots">${dots}</span></button>`;
+  });
+  html+=`</div>
+  <div class="legend">
+    <span><span class="d" style="background:var(--done)"></span>erfolgt</span>
+    <span><span class="d" style="border:1.5px solid var(--planned)"></span>geplant</span>
+  </div>
+
+  <div style="margin-top:24px">
+    <div class="row between" style="margin-bottom:12px;gap:8px">
+      <h2 class="day-title">${new Date(calSelected).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</h2>
+      <div class="btnbar">
+        <button class="sbtn" onclick="document.getElementById('file-cal').click()">Screenshot</button>
+        <button class="gbtn" onclick="doPropose()">Vorschlag</button>
+      </div>
+    </div>
+    <div id="cal-status"></div>
+    <div id="day-list">${daySessions.length?daySessions.map(cardHTML).join(''):'<div class="muted" style="padding:18px 0">Noch nichts geplant. Screenshot hochladen oder Vorschlag holen.</div>'}</div>
+  </div>`;
+
+  document.getElementById('view-kalender').innerHTML=html;
+}
+function cardHTML(s){
+  const done=s.status==='done';
+  const meta=[];
+  if(s.durationMin!=null)meta.push(`${s.durationMin} min`);
+  if(s.distanceKm!=null)meta.push(`${s.distanceKm} km`);
+  if(s.avgHr!=null)meta.push(`ø ${s.avgHr} bpm`);
+  if(s.load!=null)meta.push(`<span style="color:var(--load)">Last ${s.load}</span>`);
+  return `<div class="card" style="border-left:3px solid ${done?'var(--done)':'var(--planned)'}">
+    <div class="row between">
+      <span style="font-weight:600;font-size:15px">${esc(s.title)}</span>
+      <div class="row" style="gap:10px">
+        <span class="tagpill" style="color:${done?'var(--done)':'var(--planned)'}">${done?'erfolgt':'geplant'}</span>
+        <button onclick="delSession('${s.id}')" style="background:none;border:none;color:var(--dim);font-size:15px">✕</button>
+      </div>
+    </div>
+    <div class="meta mono">${meta.join('<span></span>')}</div>
+    ${s.focus?`<div class="muted" style="margin-top:6px;line-height:1.4">${esc(s.focus)}</div>`:''}
+  </div>`;
+}
+function calMove(dir){
+  let m=calCursor.m+dir, y=calCursor.y;
+  if(m<0){m=11;y--;} if(m>11){m=0;y++;}
+  calCursor={y,m}; renderCalendar();
+}
+function calSelect(key){ calSelected=key; renderCalendar(); }
+function delSession(id){ sessions=sessions.filter(s=>s.id!==id); persist(); renderCalendar(); renderBadge(); }
+
+// ══════════════ Rendering: Chat ══════════════
+function renderChat(){
+  const shown = messages.length?messages:[{id:'greet',role:'assistant',text:'Hey! Ich hab deinen Trainingszustand und dein Ziel im Blick. Erzähl mir, wie ein Training war, schick mir einen Screenshot aus Zepp, oder frag mich, was als Nächstes Sinn macht.'}];
+  let html=`<div class="chat"><div class="msgs" id="msgs">`;
+  shown.forEach(m=>{ html+=bubbleHTML(m); });
+  html+=`</div><div id="chat-extra"></div>
+    <div id="chat-status"></div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="composer">
+      <button class="gbtn" style="padding:10px 12px" onclick="document.getElementById('file-chat').click()" title="Screenshot anhängen">＋</button>
+      <textarea id="chat-input" rows="1" placeholder="Training beschreiben oder fragen…"></textarea>
+      <button class="sbtn" style="padding:11px 16px" onclick="sendChat()">Senden</button>
+    </div></div>`;
+  document.getElementById('view-coach').innerHTML=html;
+
+  const ta=document.getElementById('chat-input');
+  ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} });
+  renderThumbs(); renderPending();
+  const msgs=document.getElementById('msgs'); if(msgs) msgs.scrollTop=msgs.scrollHeight;
+}
+function bubbleHTML(m){
+  const u=m.role==='user';
+  const imgs=(m.images||[]).map(im=>`<img class="bimg" src="data:${im.mediaType};base64,${im.data}">`).join('');
+  return `<div class="brow ${u?'u':'a'}"><div class="bubble">${imgs}${m.text?esc(m.text):''}</div></div>`;
+}
+function renderThumbs(){
+  const el=document.getElementById('thumbs'); if(!el)return;
+  el.innerHTML=chatPending.map((im,i)=>`<div class="thumb"><img src="data:${im.mediaType};base64,${im.data}"><button onclick="rmPending(${i})">✕</button></div>`).join('');
+}
+function rmPending(i){ chatPending.splice(i,1); renderThumbs(); }
+function renderPending(){
+  const el=document.getElementById('chat-extra'); if(!el)return;
+  if(!pendingSession){ el.innerHTML=''; return; }
+  const s=pendingSession, meta=[];
+  meta.push(s.date); meta.push(s.status==='done'?'erfolgt':'geplant');
+  if(s.durationMin!=null)meta.push(s.durationMin+' min');
+  if(s.avgHr!=null)meta.push('ø '+s.avgHr+' bpm');
+  if(s.load!=null)meta.push('Last '+s.load);
+  el.innerHTML=`<div class="propose">
+    <div class="lab">Als Session eintragen?</div>
+    <div style="font-weight:600;margin-bottom:4px">${esc(s.title)}</div>
+    <div class="meta mono" style="color:var(--dim);font-size:13px">${meta.map(esc).join(' · ')}</div>
+    <div class="row" style="gap:8px;margin-top:12px">
+      <button class="sbtn" onclick="confirmPending()">Eintragen</button>
+      <button class="gbtn" onclick="pendingSession=null;renderPending()">Verwerfen</button>
+    </div></div>`;
+}
+function confirmPending(){
+  sessions.push(pendingSession);
+  messages.push({id:uid(),role:'assistant',text:`Eingetragen: ${pendingSession.title} am ${pendingSession.date} (${pendingSession.status==='done'?'erfolgt':'geplant'}). Findest du jetzt im Kalender.`});
+  pendingSession=null; persist(); renderChat(); renderCalendar(); renderBadge();
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const text=(inp.value||'').trim();
+  if(!text&&chatPending.length===0)return;
+  const userMsg={id:uid(),role:'user',text,images:chatPending.slice()};
+  messages.push(userMsg);
+  const history=messages.map(m=>({role:m.role,text:m.text||'',images:m.images||[]}));
+  chatPending=[]; inp.value=''; persist(); renderChat();
+  setStatus('chat-status','Coach denkt nach…');
+  try{
+    const reply=await aiChat(history);
+    const {text:clean,session}=splitSession(reply);
+    messages.push({id:uid(),role:'assistant',text:clean});
+    if(session) pendingSession=session;
+    persist(); renderChat();
+  }catch(e){ setStatus('chat-status','',e.message); }
+}
+
+// ══════════════ Kalender-Aktionen ══════════════
+let draft=null;
+async function onCalFile(file){
+  if(!file)return;
+  setStatus('cal-status','Screenshot wird gelesen…');
+  try{
+    const b64=await readB64(file);
+    const raw=await aiExtract(b64,file.type||'image/png');
+    draft={id:uid(),status:'done',date:raw.date||calSelected,type:raw.type||'sonstige',
+      title:raw.title||TYPE_LABEL[raw.type]||'Training',durationMin:raw.durationMin??null,distanceKm:raw.distanceKm??null,
+      avgHr:raw.avgHr??null,sleepH:raw.sleepH??null,hrv:raw.hrv??null};
+    draft.load=estimateLoad(draft);
+    setStatus('cal-status','');
+    openDraftModal();
+  }catch(e){ setStatus('cal-status','',e.message||'Screenshot konnte nicht gelesen werden.'); }
+}
+async function doPropose(){
+  setStatus('cal-status','Coach plant…');
+  try{
+    const p=await aiPropose(calSelected);
+    setStatus('cal-status','');
+    openProposeModal(p);
+  }catch(e){ setStatus('cal-status','',e.message||'Vorschlag fehlgeschlagen.'); }
+}
+function setStatus(id,msg,err){
+  const el=document.getElementById(id); if(!el)return;
+  if(err){ el.innerHTML=`<div class="err">${esc(err)}</div>`; }
+  else if(msg){ el.innerHTML=`<div class="muted" style="padding:8px 0">${esc(msg)}</div>`; }
+  else el.innerHTML='';
+}
+
+// ══════════════ Modals ══════════════
+function openDraftModal(){
+  const f=[
+    ['Titel','title','text'],['Datum','date','text'],['Dauer (min)','durationMin','num'],
+    ['Distanz (km)','distanceKm','num'],['Ø HF','avgHr','num'],['Schlaf (h)','sleepH','num'],['HRV','hrv','num']
+  ];
+  const rows=f.map(([lab,k,t])=>`<div class="frow"><label>${lab}</label><input data-k="${k}" data-t="${t}" value="${draft[k]??''}" inputmode="${t==='num'?'decimal':'text'}"></div>`).join('');
+  showModal(`<h3>Werte prüfen</h3>
+    <p class="muted" style="margin-top:0">Aus dem Screenshot gelesen. Korrigier, was nicht stimmt.</p>
+    ${rows}
+    <div class="muted" style="margin:4px 0 14px">Geschätzte Last: <span class="mono" style="color:var(--load)">${draft.load??'–'}</span></div>
+    <button class="primary" onclick="saveDraft()">Als erfolgt speichern</button>`);
+}
+function saveDraft(){
+  document.querySelectorAll('.modal [data-k]').forEach(inp=>{
+    const k=inp.dataset.k, t=inp.dataset.t, v=inp.value.trim();
+    draft[k] = t==='num' ? (v?+v:null) : v;
+  });
+  draft.load=estimateLoad(draft);
+  sessions.push(draft); calSelected=draft.date; draft=null;
+  closeModal(); persist(); renderCalendar(); renderBadge();
+}
+function openProposeModal(p){
+  showModal(`<h3>Coach-Vorschlag</h3>
+    <div class="row" style="gap:8px;margin-bottom:8px">
+      <span class="tag">${TYPE_LABEL[p.type]||p.type}</span><span class="tag">${esc(p.intensity)}</span><span class="tag">${p.durationMin} min</span>
+    </div>
+    <div style="font-family:'Archivo';font-weight:700;font-size:18px;margin-bottom:6px">${esc(p.title)}</div>
+    <p class="muted" style="margin-top:0;line-height:1.5">${esc(p.focus)}</p>
+    <button class="primary" onclick='addProposal(${JSON.stringify(p).replace(/'/g,"&#39;")})'>In Kalender übernehmen</button>`);
+}
+function addProposal(p){
+  sessions.push({id:uid(),status:'planned',date:calSelected,type:p.type,title:p.title,durationMin:p.durationMin,focus:p.focus,intensity:p.intensity});
+  closeModal(); persist(); renderCalendar(); renderBadge();
+}
+function openProfile(){
+  const p=profile||{};
+  showModal(`<h3>Profil & Einstellungen</h3>
+    <div class="muted" style="margin-top:0;line-height:1.6;font-size:13px">
+      <b style="color:var(--text)">Ziel:</b> ${esc(p.goal||'–')}<br>
+      <b style="color:var(--text)">Zeithorizont:</b> ${esc(p.deadline||'–')}<br>
+      <b style="color:var(--text)">Einheiten/Woche:</b> ${esc(p.freqPerWeek||'–')}<br>
+      <b style="color:var(--text)">Level:</b> ${esc(p.level||'–')}<br>
+      <b style="color:var(--text)">Balance:</b> ${esc(p.balance||'–')}<br>
+      <b style="color:var(--text)">Aktivitäten:</b> ${esc(p.activities||'–')}<br>
+      <b style="color:var(--text)">Tage:</b> ${esc(p.days||'–')}<br>
+      <b style="color:var(--text)">Equipment:</b> ${esc(p.equipment||'–')}<br>
+      <b style="color:var(--text)">Einschränkungen:</b> ${esc(p.injuries||'–')}
+    </div>
+    <div class="frow" style="margin-top:16px"><label>API Key</label><input id="edit-key" type="password" value="${esc(apiKey)}" placeholder="sk-ant-…"></div>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <button class="primary" style="flex:1" onclick="saveKey()">Key speichern</button>
+      <button class="gbtn" onclick="resetAll()">Alles zurücksetzen</button>
+    </div>`);
+}
+function saveKey(){
+  const k=document.getElementById('edit-key').value.trim();
+  if(k.startsWith('sk-ant-')){ apiKey=k; try{localStorage.setItem(LS.key,k);}catch(e){} }
+  closeModal();
+}
+function resetAll(){
+  if(!confirm('Wirklich alles löschen (Profil, Trainings, Chat, Key)?'))return;
+  try{ Object.values(LS).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  location.reload();
+}
+function showModal(inner){
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${inner}</div></div>`;
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+
+// ══════════════ Tabs & Init ══════════════
+function setTab(t){
+  tab=t;
+  document.getElementById('view-kalender').classList.toggle('hidden',t!=='kalender');
+  document.getElementById('view-coach').classList.toggle('hidden',t!=='coach');
+  document.getElementById('tab-kalender').classList.toggle('on',t==='kalender');
+  document.getElementById('tab-coach').classList.toggle('on',t==='coach');
+  if(t==='coach') renderChat();
+}
+function renderAll(){ renderBadge(); renderCalendar(); renderChat(); setTab('kalender'); }
+
+function seed(){
+  const t=today();
+  const mk=(off,o)=>Object.assign({id:uid(),date:iso(addDays(t,off))},o);
+  return [
+    mk(-6,{status:'done',type:'lauf',title:'Dauerlauf ruhig',durationMin:45,distanceKm:7.2,avgHr:138,load:180,sleepH:7.1,hrv:62}),
+    mk(-5,{status:'done',type:'kraft',title:'Ganzkörper Kraft',durationMin:55,avgHr:118,load:220}),
+    mk(-3,{status:'done',type:'lauf',title:'Intervalle 5×3min',durationMin:40,distanceKm:6.8,avgHr:158,load:320,sleepH:6.4,hrv:54}),
+    mk(-2,{status:'done',type:'kraft',title:'Oberkörper',durationMin:50,avgHr:112,load:200}),
+    mk(1,{status:'planned',type:'lauf',title:'Longrun locker',durationMin:75,focus:'Grundlagenausdauer nach der harten Woche'}),
+    mk(2,{status:'planned',type:'kraft',title:'Beine & Core',durationMin:50})
+  ];
+}
+
+// File-Inputs
+document.getElementById('file-cal').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; onCalFile(f); });
+document.getElementById('file-chat').addEventListener('change',async e=>{
+  const files=Array.from(e.target.files||[]); e.target.value='';
+  for(const f of files){ chatPending.push({data:await readB64(f),mediaType:f.type||'image/png'}); }
+  renderThumbs();
+});
+document.getElementById('profile-btn').addEventListener('click',openProfile);
+
+// Boot
+load();
+initSetup();
+if(apiKey && profile){
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  renderAll();
+}else{
+  // Falls Key schon da, aber Profil fehlt: trotzdem Onboarding ab Schritt 1
+  if(apiKey){ document.getElementById('s-key').value=apiKey; }
+  showStep();
+}
+</script>
+</body>
+</html>
