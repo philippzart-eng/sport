@@ -782,7 +782,8 @@ function renderChat(){
 }
 function bubbleHTML(m){
   const u=m.role==='user';
-  const imgs=(m.images||[]).map(im=>`<img class="bimg" src="data:${im.mediaType};base64,${im.data}">`).join('');
+  const imgs=(m.images||[]).map(im=>`<img class="bimg" src="data:${im.mediaType};base64,${im.data}">`).join('')
+    + (m.imgCount?`<div style="font-size:12.5px;color:var(--dim);margin-bottom:6px">📷 ${m.imgCount} Screenshot${m.imgCount>1?'s':''} gesendet</div>`:'');
   let opts='';
   if(m.options && m.options.items){
     if(m.options.chosen){
@@ -846,13 +847,19 @@ function confirmPending(){
   pendingSession=null; persist(); renderChat(); renderCalendar(); renderBadge();
 }
 
+// Kostenkontrolle:
+const CHAT_SEND_LIMIT = 12;   // nur die letzten N Nachrichten an die API
+const CHAT_KEEP_LIMIT = 60;   // so viele Nachrichten max. lokal behalten
+
 async function sendChat(){
   const inp=document.getElementById('chat-input');
   const text=(inp.value||'').trim();
   if(!text&&chatPending.length===0)return;
   const userMsg={id:uid(),role:'user',text,images:chatPending.slice()};
   messages.push(userMsg);
-  const history=messages.map(m=>({role:m.role,text:m.text||'',images:m.images||[]}));
+  // Nur die letzten N Nachrichten senden — der Trainingszustand steckt separat
+  // im System-Prompt, ältere Chat-Zeilen kosten nur Tokens ohne Mehrwert.
+  const history=messages.slice(-CHAT_SEND_LIMIT).map(m=>({role:m.role,text:m.text||'',images:m.images||[]}));
   chatPending=[]; inp.value=''; persist(); renderChat();
   setStatus('chat-status','Coach denkt nach…');
   try{
@@ -861,6 +868,11 @@ async function sendChat(){
     const {text:clean,session}=splitSession(afterOpts.text);
     const aMsg={id:uid(),role:'assistant',text:clean};
     if(afterOpts.options) aMsg.options=afterOpts.options;
+    // Bilder aus dem gespeicherten Verlauf entfernen: sie wurden ausgewertet,
+    // ihr erneutes Mitsenden würde nur Tokens kosten. Der Text bleibt.
+    if(userMsg.images.length){ userMsg.imgCount=userMsg.images.length; userMsg.images=[]; }
+    // Verlauf deckeln, damit localStorage nicht durch Altlasten vollläuft.
+    if(messages.length>CHAT_KEEP_LIMIT) messages=messages.slice(-CHAT_KEEP_LIMIT);
     messages.push(aMsg);
     if(session) pendingSession=session;
     persist(); renderChat();
