@@ -392,11 +392,12 @@ async function aiChat(history){
 Nutze bei der Einordnung wenn vorhanden Alter, Ruhe-/Maxpuls (für HF-Zonen), Schlaf und Stress aus dem Profil. Bei wenig Schlaf oder hohem Stress eher zurückhaltender planen. Beziehe dich auf konkrete Ziel/Zieldatum, wenn vorhanden.
 Dehnen & Mobilität (Typ "mobility") sind ein eigenständiger, wichtiger Baustein — plane sie regelmäßig aktiv ein (z.B. an Ruhetagen, nach harten Einheiten oder als eigene kurze Einheit), nicht nur als Randnotiz. Richte dich nach der Mobilitäts-Priorität im Profil.
 WICHTIG zu Datum/Wochentag: Für HEUTE nutze die Felder "wochentag" und "datumLang". Für ALLE anderen Tage (z.B. bei Mehrtagesplänen) nutze ausschließlich die Zuordnung im Feld "kalender7Tage" (Datum→Wochentag). Rechne Wochentage NIEMALS selbst aus und nenne nie einen Wochentag, der nicht exakt aus diesen Feldern stammt.
+WICHTIG zur Deutung von "Morgen": "heute Morgen", "heute früh", "jetzt am Morgen" = HEUTE (Tageszeit, Feld "heute"). Nur ein alleinstehendes "morgen" ("für morgen", "was mache ich morgen") = der FOLGETAG. Im Zweifel gilt: Wenn "heute" im Satz steht, ist immer der heutige Tag gemeint. Prüfe vor jeder Datumsnennung, ob der genannte Tag zur Anfrage passt.
 Nutzerprofil & aktueller Zustand (JSON): ${JSON.stringify(coachContext())}.
 ACWR-Flag: high=Überlastungsrisiko, low=zu wenig Reiz, ok=ausgewogen.
 Wenn eine Nachricht einen Trainings-Screenshot enthält, lies die Werte aus und fasse sie zusammen.
 Wenn aus der Nachricht ein konkret absolviertes ODER zu planendes Training hervorgeht, hänge GANZ AM ENDE eine Zeile an, exakt:
-[[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null}[[/SESSION]]
+[[SESSION]]{"status":"done|planned","date":"YYYY-MM-DD","type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"...","durationMin":Zahl|null,"distanceKm":Zahl|null,"avgHr":Zahl|null,"sleepH":Zahl|null,"hrv":Zahl|null,"details":"Wenn du das Workout im Text konkret beschrieben hast (Übungen/Ablauf): kompakte Zusammenfassung davon, sonst null"}[[/SESSION]]
 Nur EINE Zeile, nur wenn wirklich eine Einheit gemeint ist. Sonst weglassen.
 Wenn du dem Nutzer mehrere Trainings-OPTIONEN zur Wahl vorschlägst (z.B. Option 1/2/3 für einen Tag), formuliere sie im Text ganz normal UND hänge zusätzlich GANZ AM ENDE (nach einer eventuellen [[SESSION]]-Zeile) einen maschinenlesbaren Block an, exakt:
 [[OPTIONS]]{"date":"YYYY-MM-DD","items":[{"type":"lauf|kraft|rad|schwimmen|mobility|sonstige","title":"kurz","reason":"1-2 Sätze warum","durationMin":Zahl|null,"intensity":"locker|moderat|hart","recommended":true|false}]}[[/OPTIONS]]
@@ -760,18 +761,19 @@ function cardHTML(s){
     const d=s.durationMin-s.plannedDuration;
     vsIst=`<div class="muted" style="margin-top:6px;font-size:12.5px">geplant ${s.plannedDuration} min${s.plannedIntensity?` (${esc(s.plannedIntensity)})`:''} → gemacht ${s.durationMin} min${d?` (${d>0?'+':''}${d})`:''}</div>`;
   }
-  return `<div class="card" style="border-left:3px solid ${done?'var(--done)':'var(--planned)'}">
+  return `<div class="card" style="border-left:3px solid ${done?'var(--done)':'var(--planned)'};cursor:pointer" onclick="openSessionDetail('${s.id}')">
     <div class="row between">
       <span style="font-weight:600;font-size:15px">${esc(s.title)}</span>
       <div class="row" style="gap:10px">
         ${matched}
         <span class="tagpill" style="color:${done?'var(--done)':'var(--planned)'}">${done?'erfolgt':'geplant'}</span>
-        <button onclick="delSession('${s.id}')" style="background:none;border:none;color:var(--dim);font-size:15px">✕</button>
+        <button onclick="event.stopPropagation();delSession('${s.id}')" style="background:none;border:none;color:var(--dim);font-size:15px">✕</button>
       </div>
     </div>
     <div class="meta mono">${meta.join('<span></span>')}</div>
     ${vsIst}
     ${s.focus?`<div class="muted" style="margin-top:6px;line-height:1.4">${esc(s.focus)}</div>`:''}
+    ${s.details?`<div class="muted" style="margin-top:6px;font-size:12px;color:var(--load)">📋 Workout-Details gespeichert — antippen</div>`:''}
   </div>`;
 }
 function calMove(dir){
@@ -781,6 +783,48 @@ function calMove(dir){
 }
 function calSelect(key){ calSelected=key; renderCalendar(); }
 function delSession(id){ sessions=sessions.filter(s=>s.id!==id); persist(); renderCalendar(); renderBadge(); }
+
+// ── Trainings-Detailansicht ──
+function openSessionDetail(id){
+  const s=sessions.find(x=>x.id===id); if(!s)return;
+  const done=s.status==='done';
+  const rows=[];
+  rows.push(['Datum', wochentag(s.date)+', '+parseLocal(s.date).toLocaleDateString('de-DE',{day:'numeric',month:'long'})]);
+  rows.push(['Status', done?'erfolgt':'geplant']);
+  rows.push(['Typ', TYPE_LABEL[s.type]||s.type]);
+  if(s.durationMin!=null) rows.push(['Dauer', s.durationMin+' min']);
+  if(s.intensity) rows.push(['Intensität', s.intensity]);
+  if(s.distanceKm!=null) rows.push(['Distanz', s.distanceKm+' km']);
+  if(s.avgHr!=null) rows.push(['Ø Herzfrequenz', s.avgHr+' bpm']);
+  if(s.load!=null) rows.push(['Last', String(s.load)]);
+  if(s.sleepH!=null) rows.push(['Schlaf', s.sleepH+' h']);
+  if(s.hrv!=null) rows.push(['HRV', String(s.hrv)]);
+  if(s.matchedFromPlan && s.plannedDuration!=null) rows.push(['Geplant war', s.plannedDuration+' min'+(s.plannedIntensity?' ('+s.plannedIntensity+')':'')]);
+  const table=rows.map(([l,v])=>`<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted" style="font-size:13px">${esc(l)}</span><span style="font-size:13.5px">${esc(v)}</span></div>`).join('');
+  const focus=s.focus?`<p class="muted" style="line-height:1.5;font-size:13.5px;margin:12px 0 0">${esc(s.focus)}</p>`:'';
+  const details=s.details
+    ? `<div style="margin-top:14px"><div style="font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Workout</div><div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">${esc(s.details)}</div></div>
+       <button class="gbtn" style="width:100%;margin-top:12px" onclick="genSessionDetails('${s.id}')">Neu ausarbeiten</button>`
+    : `<button class="primary" style="width:100%;margin-top:14px" onclick="genSessionDetails('${s.id}')">Workout ausarbeiten lassen</button>
+       <p class="muted" style="font-size:12px;margin:8px 0 0;text-align:center">Der Coach erstellt die Übungen einmalig — danach hier jederzeit abrufbar.</p>`;
+  showModal(`<h3>${esc(s.title)}</h3>${table}${focus}<div id="detail-status"></div>${details}`);
+}
+async function genSessionDetails(id){
+  const s=sessions.find(x=>x.id===id); if(!s)return;
+  const st=document.getElementById('detail-status');
+  if(st) st.innerHTML='<div class="muted" style="padding:8px 0">Coach arbeitet aus…</div>';
+  try{
+    const prompt=`Arbeite dieses Training konkret aus, passend zum Nutzerprofil (Level, Equipment, Einschränkungen) und Zustand.
+Profil & Zustand (JSON): ${JSON.stringify(coachContext())}.
+Training: ${JSON.stringify({date:s.date,type:s.type,title:s.title,durationMin:s.durationMin,intensity:s.intensity,focus:s.focus})}.
+Erstelle eine kompakte, praktische Übungsbeschreibung (Aufwärmen, Hauptteil mit konkreten Übungen/Sätzen/Zeiten, Abschluss). Antworte NUR mit dem Workout-Text, ohne Markdown-Überschriften (#), ohne Einleitung, max. ~180 Wörter.`;
+    const text=await callClaude({max_tokens:800,messages:[{role:'user',content:prompt}]});
+    s.details=text.trim();
+    persist();
+    openSessionDetail(id); // Ansicht mit gespeichertem Workout neu öffnen
+    renderCalendar();
+  }catch(e){ if(st) st.innerHTML=`<div class="err">${esc(e.message||'Fehlgeschlagen')}</div>`; }
+}
 
 // ══════════════ Rendering: Chat ══════════════
 function renderChat(){
