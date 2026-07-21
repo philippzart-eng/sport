@@ -23,7 +23,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif}
   #app{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
-  .app-header{flex:0 0 auto;max-width:720px;width:100%;margin:0 auto;padding:20px 18px 12px}
+  .app-header{flex:0 0 auto;max-width:720px;width:100%;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 12px}
   .app-main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;max-width:720px;width:100%;margin:0 auto;padding:0 18px 12px}
   .app-main.chat-mode{overflow:hidden;display:flex;flex-direction:column;padding-bottom:0}
   .app-main.chat-mode #view-coach{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
@@ -41,7 +41,7 @@
 
   /* Setup / Onboarding */
   .overlay{position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto}
-  .setup{max-width:460px;margin:0 auto;padding:48px 22px 60px}
+  .setup{max-width:460px;margin:0 auto;padding:calc(48px + env(safe-area-inset-top)) 22px 60px}
   .logo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#1E2739,#0F1420);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:20px;overflow:hidden}
   .logo svg{width:52px;height:52px}
   .setup h2{font-family:'Archivo';font-weight:800;font-size:26px;margin:0 0 6px}
@@ -1087,7 +1087,8 @@ function openProposeModal(opts){
     </button>`;
   }).join('');
   const dateTxt=wochentag(calSelected)+', '+parseLocal(calSelected).toLocaleDateString('de-DE',{day:'numeric',month:'long'});
-  showModal(`<h3>Optionen für heute</h3>
+  const heading = calSelected===iso(today()) ? 'Optionen für heute' : 'Optionen für '+wochentag(calSelected);
+  showModal(`<h3>${heading}</h3>
     <div class="opt-datebar">${dateTxt}</div>
     <p class="muted" style="margin:0 0 14px">Tipp auf die Option, die du machen willst — sie landet direkt im Kalender.</p>
     ${cards}`);
@@ -1145,14 +1146,13 @@ function weekKey(d){
   return x.getFullYear()+'-W'+String(week).padStart(2,'0');
 }
 function getWeekcheck(){ try{ return JSON.parse(localStorage.getItem(LS.weekcheck)||'null'); }catch(e){ return null; } }
-function setWeekcheckDone(){ try{ localStorage.setItem(LS.weekcheck, JSON.stringify({lastPlanned: weekKey(addDays(today(),1))})); }catch(e){} }
-// Fällig: heute ist Sonntag ODER Montag früh, und die kommende Woche ist noch nicht geplant.
+// Zielwoche des Checks: sonntags die kommende Woche, sonst die laufende.
+function weekcheckTarget(){ const dow=today().getDay(); return weekKey(addDays(today(), dow===0?1:0)); }
+function setWeekcheckDone(){ try{ localStorage.setItem(LS.weekcheck, JSON.stringify({lastPlanned: weekcheckTarget()})); }catch(e){} }
+// Fällig, solange die Zielwoche noch nicht geplant wurde — an jedem Wochentag.
 function weekcheckDue(){
-  const dow=today().getDay(); // 0=So
-  if(dow!==0 && dow!==1) return false;
-  const target=weekKey(addDays(today(), dow===0?1:0)); // die Woche, die Mo beginnt
   const wc=getWeekcheck();
-  return !wc || wc.lastPlanned!==target;
+  return !wc || wc.lastPlanned!==weekcheckTarget();
 }
 
 const wcAnswers={};
@@ -1276,6 +1276,21 @@ if(apiKey && profile){
   if(apiKey){ document.getElementById('s-key').value=apiKey; }
   showStep();
 }
+
+// Homescreen-App bleibt oft tagelang offen: Beim Wiederöffnen prüfen,
+// ob inzwischen ein neuer Tag ist — dann Auswahl auf heute setzen und
+// alles neu rendern (Badge, Kalender, Wochencheck-Banner).
+let bootDay=iso(today());
+function refreshIfNewDay(){
+  if(iso(today())!==bootDay){
+    bootDay=iso(today());
+    initCalVars();
+    if(apiKey && profile) renderAll();
+  }
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refreshIfNewDay(); });
+window.addEventListener('focus',refreshIfNewDay);
+window.addEventListener('pageshow',refreshIfNewDay);
 </script>
 </body>
 </html>
