@@ -843,11 +843,14 @@ function openSessionDetail(id){
   }else if(s.type==='kraft'||s.type==='mobility'||s.type==='sonstige'){
     exTable=`<div class="row" style="margin-top:12px"><button class="gbtn" style="width:100%" onclick="addExerciseRow('${s.id}')">+ Übung manuell anlegen</button></div>`;
   }
+  const durField=`<div class="field" style="margin-top:14px"><label>Dauer (Minuten)</label><input id="detail-duration" type="number" inputmode="numeric" min="5" max="240" step="5" value="${s.durationMin??45}" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px"></div>`;
   const details=s.details
     ? `<div style="margin-top:14px"><div style="font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Workout</div><div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">${esc(s.details)}</div></div>
-       <div class="field" style="margin-top:14px"><label>Anpassungswunsch (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
+       ${durField}
+       <div class="field" style="margin-top:10px"><label>Anpassungswunsch (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
        <button class="gbtn" style="width:100%;margin-top:8px" onclick="genSessionDetails('${s.id}')">Neu ausarbeiten</button>`
-    : `<div class="field" style="margin-top:14px"><label>Dein Input für den Coach (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
+    : `${durField}
+       <div class="field" style="margin-top:10px"><label>Dein Input für den Coach (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
        <button class="primary" style="width:100%;margin-top:8px" onclick="genSessionDetails('${s.id}')">Workout ausarbeiten lassen</button>
        <p class="muted" style="font-size:12px;margin:8px 0 0;text-align:center">Der Coach erstellt die Übungen einmalig — danach hier jederzeit abrufbar.</p>`;
   showModal(`<h3>${esc(s.title)}</h3>${table}${focus}${exTable}<div id="detail-status"></div>${details}`);
@@ -856,6 +859,9 @@ async function genSessionDetails(id){
   const s=sessions.find(x=>x.id===id); if(!s)return;
   const inp=document.getElementById('detail-input');
   const wish=(inp&&inp.value.trim())||'';
+  const durInp=document.getElementById('detail-duration');
+  const dur=durInp?parseInt(durInp.value,10):NaN;
+  if(dur>0) s.durationMin=dur; // eingestellte Dauer übernehmen
   const st=document.getElementById('detail-status');
   if(st) st.innerHTML='<div class="muted" style="padding:8px 0">Coach arbeitet aus…</div>';
   try{
@@ -865,9 +871,10 @@ Training: ${JSON.stringify({date:s.date,type:s.type,title:s.title,durationMin:s.
 ${wish?`WICHTIG — ausdrücklicher Wunsch des Nutzers, unbedingt berücksichtigen: "${wish}".`:''}
 ${s.details&&wish?`Bisherige Ausarbeitung (als Basis, gemäß Wunsch anpassen): ${s.details}`:''}
 Wenn im Zustand "letzteKraftIst" vorhanden ist: nutze die tatsächlich geschafften Werte für progressive Steigerung (kleine Erhöhung von Gewicht ODER Wiederholungen, wenn das Ist geschafft wurde; halten oder reduzieren, wenn nicht).
-Antworte NUR mit JSON, ohne Markdown: {"beschreibung":"kompakter Ablauf: Aufwärmen, Hauptteil, Abschluss — max ~120 Wörter, keine #-Überschriften","uebungen":[{"name":"Übungsname","soll":"z.B. 4×8 · 60 kg ODER 3×12 ODER 2 min"}]}. 
-"uebungen" nur für die Hauptübungen (3-8 Stück); bei reinen Lauf-/Rad-Einheiten darf das Array leer sein.`;
-    const text=await callClaude({max_tokens:900,messages:[{role:'user',content:prompt}]});
+DAUER-PFLICHT: Das Workout muss real ${s.durationMin||45} Minuten füllen. Kalkuliere die Zeit jeder Übung ehrlich durch (Sätze × Wiederholungen/Haltezeit inkl. Seitenwechsel + realistische Pausen) und plane so viele Übungen bzw. Runden, dass die Summe aus Aufwärmen + Hauptteil + Abschluss die Zieldauer erreicht — nicht deutlich darunter. Gib bei Mobility-/Dehnübungen konkrete Haltezeiten in Sekunden an und nenne im "soll" die Zeit (z.B. "3×45 s pro Seite"). Schreibe am Ende der "beschreibung" die kalkulierte Gesamtzeit (z.B. "Gesamt: ~45 min").
+Antworte NUR mit JSON, ohne Markdown: {"beschreibung":"kompakter Ablauf: Aufwärmen, Hauptteil, Abschluss — max ~120 Wörter, keine #-Überschriften","uebungen":[{"name":"Übungsname","soll":"z.B. 4×8 · 60 kg ODER 3×12 ODER 3×45 s pro Seite"}]}. 
+"uebungen" nur für die Hauptübungen; so viele wie nötig, um die Dauer zu füllen (bei 45+ min Mobility sind das typisch 8-12); bei reinen Lauf-/Rad-Einheiten darf das Array leer sein.`;
+    const text=await callClaude({max_tokens:1200,messages:[{role:'user',content:prompt}]});
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     s.details=(parsed.beschreibung||'').trim();
     if(Array.isArray(parsed.uebungen)&&parsed.uebungen.length){
@@ -1174,6 +1181,47 @@ function chooseOption(i){
   sessions.push({id:uid(),status:'planned',date:calSelected,type:o.type,title:o.title,durationMin:o.durationMin,focus:o.reason||o.focus,intensity:o.intensity});
   closeModal(); persist(); renderCalendar(); renderBadge();
 }
+// ── Backup: Daten überleben App-Neuinstallation / Speicher-Reset ──
+// Hintergrund: Safari und die Homescreen-App haben GETRENNTE Speicher.
+// Beim Neu-Hinzufügen zum Home-Bildschirm startet der Speicher leer.
+function backupJSON(){
+  return JSON.stringify({
+    v:1, exportedAt:new Date().toISOString(),
+    sessions, messages, profile,
+    weekcheck:getWeekcheck()
+  });
+}
+async function exportBackup(){
+  const data=backupJSON();
+  let copied=false;
+  try{ await navigator.clipboard.writeText(data); copied=true; }catch(e){}
+  showModal(`<h3>Backup exportieren</h3>
+    <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">${copied?'✓ In die Zwischenablage kopiert.':'Kopieren nicht möglich — markiere den Text unten manuell.'} Speichere den Text z.B. in Notizen. In einer neuen App-Instanz: ⚙ → „Backup einspielen" → einfügen.</p>
+    <textarea readonly style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:12px;font-family:monospace" onclick="this.select()">${esc(data)}</textarea>`);
+}
+function openImportBackup(){
+  showModal(`<h3>Backup einspielen</h3>
+    <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">Füge hier den Backup-Text ein. Achtung: ersetzt die aktuellen Daten dieser Instanz.</p>
+    <textarea id="import-data" placeholder="Backup-Text einfügen…" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:16px;font-family:monospace"></textarea>
+    <div id="import-status"></div>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="importBackup()">Einspielen</button>`);
+}
+function importBackup(){
+  const ta=document.getElementById('import-data');
+  const st=document.getElementById('import-status');
+  try{
+    const d=JSON.parse((ta.value||'').trim());
+    if(!d || !Array.isArray(d.sessions)) throw new Error('Kein gültiges Backup.');
+    sessions=d.sessions;
+    if(Array.isArray(d.messages)) messages=d.messages;
+    if(d.profile) profile=d.profile;
+    if(d.weekcheck){ try{ localStorage.setItem(LS.weekcheck, JSON.stringify(d.weekcheck)); }catch(e){} }
+    persist();
+    try{ localStorage.setItem(LS.profile, JSON.stringify(profile)); }catch(e){}
+    closeModal(); renderAll();
+  }catch(e){ if(st) st.innerHTML=`<div class="err">${esc(e.message||'Import fehlgeschlagen')}</div>`; }
+}
+
 function openProfile(){
   const p=profile||{};
   showModal(`<h3>Profil & Einstellungen</h3>
@@ -1192,6 +1240,10 @@ function openProfile(){
       <b style="color:var(--text)">Schlaf:</b> ${esc(p.sleep||'–')} · <b style="color:var(--text)">Stress:</b> ${esc(p.stress||'–')}
     </div>
     <button class="gbtn" style="width:100%;margin-top:14px" onclick="closeModal();openWeekcheck()">Wochen-Check starten</button>
+    <div class="row" style="gap:8px;margin-top:10px">
+      <button class="gbtn" style="flex:1" onclick="exportBackup()">Backup exportieren</button>
+      <button class="gbtn" style="flex:1" onclick="openImportBackup()">Backup einspielen</button>
+    </div>
     <div class="frow" style="margin-top:14px"><label>API Key</label><input id="edit-key" type="password" value="${esc(apiKey)}" placeholder="sk-ant-…"></div>
     <div class="row" style="gap:8px;margin-top:8px">
       <button class="primary" style="flex:1" onclick="saveKey()">Key speichern</button>
