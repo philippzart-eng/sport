@@ -804,24 +804,31 @@ function openSessionDetail(id){
   const focus=s.focus?`<p class="muted" style="line-height:1.5;font-size:13.5px;margin:12px 0 0">${esc(s.focus)}</p>`:'';
   const details=s.details
     ? `<div style="margin-top:14px"><div style="font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Workout</div><div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">${esc(s.details)}</div></div>
-       <button class="gbtn" style="width:100%;margin-top:12px" onclick="genSessionDetails('${s.id}')">Neu ausarbeiten</button>`
-    : `<button class="primary" style="width:100%;margin-top:14px" onclick="genSessionDetails('${s.id}')">Workout ausarbeiten lassen</button>
+       <div class="field" style="margin-top:14px"><label>Anpassungswunsch (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
+       <button class="gbtn" style="width:100%;margin-top:8px" onclick="genSessionDetails('${s.id}')">Neu ausarbeiten</button>`
+    : `<div class="field" style="margin-top:14px"><label>Dein Input für den Coach (optional)</label><textarea id="detail-input" placeholder="z.B. nur Kurzhanteln, max 30 min, Schulter schonen…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;resize:vertical;min-height:52px"></textarea></div>
+       <button class="primary" style="width:100%;margin-top:8px" onclick="genSessionDetails('${s.id}')">Workout ausarbeiten lassen</button>
        <p class="muted" style="font-size:12px;margin:8px 0 0;text-align:center">Der Coach erstellt die Übungen einmalig — danach hier jederzeit abrufbar.</p>`;
   showModal(`<h3>${esc(s.title)}</h3>${table}${focus}<div id="detail-status"></div>${details}`);
 }
 async function genSessionDetails(id){
   const s=sessions.find(x=>x.id===id); if(!s)return;
+  const inp=document.getElementById('detail-input');
+  const wish=(inp&&inp.value.trim())||'';
   const st=document.getElementById('detail-status');
   if(st) st.innerHTML='<div class="muted" style="padding:8px 0">Coach arbeitet aus…</div>';
   try{
     const prompt=`Arbeite dieses Training konkret aus, passend zum Nutzerprofil (Level, Equipment, Einschränkungen) und Zustand.
 Profil & Zustand (JSON): ${JSON.stringify(coachContext())}.
 Training: ${JSON.stringify({date:s.date,type:s.type,title:s.title,durationMin:s.durationMin,intensity:s.intensity,focus:s.focus})}.
+${wish?`WICHTIG — ausdrücklicher Wunsch des Nutzers, unbedingt berücksichtigen: "${wish}".`:''}
+${s.details&&wish?`Bisherige Ausarbeitung (als Basis, gemäß Wunsch anpassen): ${s.details}`:''}
 Erstelle eine kompakte, praktische Übungsbeschreibung (Aufwärmen, Hauptteil mit konkreten Übungen/Sätzen/Zeiten, Abschluss). Antworte NUR mit dem Workout-Text, ohne Markdown-Überschriften (#), ohne Einleitung, max. ~180 Wörter.`;
     const text=await callClaude({max_tokens:800,messages:[{role:'user',content:prompt}]});
     s.details=text.trim();
+    if(wish) s.detailsWish=wish; // letzten Wunsch merken
     persist();
-    openSessionDetail(id); // Ansicht mit gespeichertem Workout neu öffnen
+    openSessionDetail(id);
     renderCalendar();
   }catch(e){ if(st) st.innerHTML=`<div class="err">${esc(e.message||'Fehlgeschlagen')}</div>`; }
 }
