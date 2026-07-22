@@ -1197,13 +1197,16 @@ function backupJSON(){
     weekcheck:getWeekcheck()
   });
 }
+// Base64 (UTF-8-sicher): macht das Backup immun gegen Autokorrektur/Smart Quotes.
+function b64e(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64d(s){ return decodeURIComponent(escape(atob(s))); }
 async function exportBackup(){
-  const data=backupJSON();
+  const data='SC1.'+b64e(backupJSON());
   let copied=false;
   try{ await navigator.clipboard.writeText(data); copied=true; }catch(e){}
   showModal(`<h3>Backup exportieren</h3>
-    <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">${copied?'✓ In die Zwischenablage kopiert.':'Kopieren nicht möglich — markiere den Text unten manuell.'} Speichere den Text z.B. in Notizen. In einer neuen App-Instanz: ⚙ → „Backup einspielen" → einfügen.</p>
-    <textarea readonly autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:12px;font-family:monospace" onclick="this.select()">${esc(data)}</textarea>`);
+    <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">${copied?'✓ In die Zwischenablage kopiert.':'Kopieren nicht möglich — markiere den Text unten manuell.'} Der Code ist gegen Autokorrektur geschützt. Speichere ihn z.B. in Notizen. In einer neuen App-Instanz: ⚙ → „Backup einspielen" → einfügen.</p>
+    <textarea readonly autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:12px;font-family:monospace;word-break:break-all" onclick="this.select()">${esc(data)}</textarea>`);
 }
 function openImportBackup(){
   showModal(`<h3>Backup einspielen</h3>
@@ -1226,13 +1229,17 @@ function cleanJSONText(t){
 function importBackup(){
   const ta=document.getElementById('import-data');
   const st=document.getElementById('import-status');
-  // Stufe 1: nur unsichtbare Zeichen entfernen und roh parsen — ein
-  // unverändertes Backup (auch mit deutschen „Quotes" im Inhalt) ist gültig.
   const raw=(ta.value||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
   let d=null, rawErr=null;
-  try{ d=JSON.parse(raw); }catch(e){ rawErr=e; }
-  // Stufe 2 (nur bei Fehlschlag): Smart-Quote-Reparatur für Text, den
-  // iOS/Notizen typografisch "verschönert" hat.
+  // Stufe 0: neues geschütztes Format "SC1.<base64>" — immun gegen Autokorrektur.
+  const b64m=raw.replace(/\s/g,'').match(/^SC1\.([A-Za-z0-9+/=]+)$/);
+  if(b64m){ try{ d=JSON.parse(b64d(b64m[1])); }catch(e){ rawErr=e; } }
+  // Stufe 1: Klartext-JSON unverändert (altes Format, gültig).
+  if(!d){ try{ d=JSON.parse(raw); }catch(e){ if(!rawErr) rawErr=e; } }
+  // Stufe 2: nacktes gerades Anführungszeichen mitten im Fließtext escapen
+  // (entsteht, wenn Notizen ein deutsches „…" teilweise "normalisiert").
+  if(!d){ try{ d=JSON.parse(raw.replace(/([a-zäöüß0-9])"(\s+[a-zäöüß0-9])/gi,'$1\\"$2')); }catch(e){} }
+  // Stufe 3: Smart-Quote-Reparatur als letzter Versuch.
   if(!d){ try{ d=JSON.parse(cleanJSONText(raw)); }catch(e){} }
   try{
     if(!d || !Array.isArray(d.sessions)) throw new Error(rawErr?('Kein gültiges Backup — '+rawErr.message):'Kein gültiges Backup.');
