@@ -1226,9 +1226,16 @@ function cleanJSONText(t){
 function importBackup(){
   const ta=document.getElementById('import-data');
   const st=document.getElementById('import-status');
+  // Stufe 1: nur unsichtbare Zeichen entfernen und roh parsen — ein
+  // unverändertes Backup (auch mit deutschen „Quotes" im Inhalt) ist gültig.
+  const raw=(ta.value||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
+  let d=null, rawErr=null;
+  try{ d=JSON.parse(raw); }catch(e){ rawErr=e; }
+  // Stufe 2 (nur bei Fehlschlag): Smart-Quote-Reparatur für Text, den
+  // iOS/Notizen typografisch "verschönert" hat.
+  if(!d){ try{ d=JSON.parse(cleanJSONText(raw)); }catch(e){} }
   try{
-    const d=JSON.parse(cleanJSONText(ta.value));
-    if(!d || !Array.isArray(d.sessions)) throw new Error('Kein gültiges Backup.');
+    if(!d || !Array.isArray(d.sessions)) throw new Error(rawErr?('Kein gültiges Backup — '+rawErr.message):'Kein gültiges Backup.');
     sessions=d.sessions;
     if(Array.isArray(d.messages)) messages=d.messages;
     if(d.profile) profile=d.profile;
