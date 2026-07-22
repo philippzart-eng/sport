@@ -231,10 +231,12 @@
   <div class="app-main">
     <div id="view-kalender"></div>
     <div id="view-coach" class="hidden"></div>
+    <div id="view-mobility" class="hidden"></div>
   </div>
 
   <div class="tabs">
     <button class="tab on" id="tab-kalender" onclick="setTab('kalender')">Kalender</button>
+    <button class="tab" id="tab-mobility" onclick="setTab('mobility')">Mobility</button>
     <button class="tab" id="tab-coach" onclick="setTab('coach')">Coach</button>
   </div>
 </div>
@@ -798,7 +800,7 @@ function calMove(dir){
   calCursor={y,m}; renderCalendar();
 }
 function calSelect(key){ calSelected=key; renderCalendar(); }
-function delSession(id){ sessions=sessions.filter(s=>s.id!==id); persist(); renderCalendar(); renderBadge(); }
+function delSession(id){ sessions=sessions.filter(s=>s.id!==id); persist(); renderCalendar(); renderBadge(); renderMobility(); }
 
 // ── Trainings-Detailansicht ──
 function openSessionDetail(id){
@@ -821,6 +823,9 @@ function openSessionDetail(id){
   // Übungstabelle: Soll (vom Coach) + Ist (vom Nutzer eintragbar)
   let exTable='';
   if(s.exercises && s.exercises.length){
+    const guidedBtn = s.status!=='done'
+      ? `<button class="primary" style="width:100%;margin-bottom:10px" onclick="startGuided('${s.id}')">▶ Geführte Session mit Timer</button>`
+      : '';
     const exRows=s.exercises.map((e,i)=>`
       <div class="ex-row">
         <div class="ex-head">
@@ -833,6 +838,7 @@ function openSessionDetail(id){
         </div>
       </div>`).join('');
     exTable=`<div style="margin-top:14px">
+      ${guidedBtn}
       <div style="font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Übungen — Soll / Ist</div>
       ${exRows}
       <div class="row" style="gap:8px;margin-top:10px">
@@ -996,7 +1002,7 @@ function chooseChatOption(msgId,i){
   const o=m.options.items[i]; if(!o)return;
   sessions.push({id:uid(),status:'planned',date:m.options.date,type:o.type,title:o.title,durationMin:o.durationMin,focus:o.reason,intensity:o.intensity});
   m.options.chosen=o.title;
-  persist(); renderChat(); renderCalendar(); renderBadge();
+  persist(); renderChat(); renderCalendar(); renderBadge(); renderMobility();
 }
 function renderThumbs(){
   const el=document.getElementById('thumbs'); if(!el)return;
@@ -1031,7 +1037,7 @@ function confirmPending(){
     msg=`Eingetragen: ${pendingSession.title} am ${pendingSession.date} (${pendingSession.status==='done'?'erfolgt':'geplant'}). Findest du jetzt im Kalender.`;
   }
   messages.push({id:uid(),role:'assistant',text:msg});
-  pendingSession=null; persist(); renderChat(); renderCalendar(); renderBadge();
+  pendingSession=null; persist(); renderChat(); renderCalendar(); renderBadge(); renderMobility();
 }
 
 // Kostenkontrolle:
@@ -1149,7 +1155,7 @@ function saveDraft(){
   if(match){ mergeIntoPlan(match, draft); }
   else { sessions.push(draft); }
   calSelected=draft.date; draft=null;
-  closeModal(); persist(); renderCalendar(); renderBadge();
+  closeModal(); persist(); renderCalendar(); renderBadge(); renderMobility();
 }
 let lastOptions=[];
 function openProposeModal(opts){
@@ -1179,7 +1185,7 @@ function openProposeModal(opts){
 function chooseOption(i){
   const o=lastOptions[i]; if(!o)return;
   sessions.push({id:uid(),status:'planned',date:calSelected,type:o.type,title:o.title,durationMin:o.durationMin,focus:o.reason||o.focus,intensity:o.intensity});
-  closeModal(); persist(); renderCalendar(); renderBadge();
+  closeModal(); persist(); renderCalendar(); renderBadge(); renderMobility();
 }
 // ── Backup: Daten überleben App-Neuinstallation / Speicher-Reset ──
 // Hintergrund: Safari und die Homescreen-App haben GETRENNTE Speicher.
@@ -1220,6 +1226,106 @@ function importBackup(){
     try{ localStorage.setItem(LS.profile, JSON.stringify(profile)); }catch(e){}
     closeModal(); renderAll();
   }catch(e){ if(st) st.innerHTML=`<div class="err">${esc(e.message||'Import fehlgeschlagen')}</div>`; }
+}
+
+// ── Geführte Session mit Timer (v.a. Mobility) ──
+// Parst Soll-Angaben: "3×45 s pro Seite" -> 6 Sätze à 45s; "2×12" -> 2 Sätze ohne Zeit (Stoppuhr).
+function parseSoll(soll){
+  const s=(soll||'').toLowerCase();
+  const sides=/pro seite|je seite|pro richtung|je richtung|pro bein|je bein|pro arm|je arm/.test(s)?2:1;
+  let m=s.match(/(\d+)\s*[×x*]\s*(\d+)\s*(min|sek|s)\b/);
+  if(m){const sec=m[3]==='min'?+m[2]*60:+m[2];return{sets:+m[1]*sides,sec};}
+  m=s.match(/(\d+)\s*(min|sek|s)\b/);
+  if(m){const sec=m[2]==='min'?+m[1]*60:+m[1];return{sets:1*sides,sec};}
+  m=s.match(/(\d+)\s*[×x*]\s*(\d+)/);
+  if(m){return{sets:+m[1]*sides,sec:null,reps:+m[2]};}
+  return{sets:1*sides,sec:null};
+}
+let mob={steps:[],i:0,remain:0,up:0,t:null,running:false,sessionId:null};
+function beep(n){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    for(let k=0;k<n;k++){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=880; g.gain.value=0.15;
+      o.start(ctx.currentTime+k*0.25); o.stop(ctx.currentTime+k*0.25+0.15);
+    }
+  }catch(e){}
+}
+function startGuided(id){
+  const s=sessions.find(x=>x.id===id); if(!s||!s.exercises||!s.exercises.length)return;
+  mob.steps=[];
+  s.exercises.forEach((e,ei)=>{
+    const p=parseSoll(e.soll);
+    for(let k=1;k<=p.sets;k++) mob.steps.push({name:e.name,soll:e.soll,set:k,sets:p.sets,sec:p.sec,reps:p.reps,exIndex:ei});
+  });
+  if(!mob.steps.length)return;
+  mob.i=0; mob.sessionId=id; mob.running=false;
+  if(mob.t){clearInterval(mob.t);mob.t=null;}
+  renderGuided();
+}
+function renderGuided(){
+  const st=mob.steps[mob.i]; if(!st)return finishGuided();
+  mob.remain=st.sec||0; mob.up=0; mob.running=false;
+  const next=mob.steps[mob.i+1];
+  showModal(`
+    <div style="text-align:center;padding:6px 0">
+      <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px">Übung ${mob.i+1} / ${mob.steps.length}</div>
+      <div style="font-family:'Archivo';font-weight:700;font-size:20px;margin:10px 0 2px">${esc(st.name)}</div>
+      <div class="muted" style="font-size:13px">Satz ${st.set}/${st.sets}${st.reps?' · '+st.reps+' Wdh.':''} <span style="color:var(--dim)">(${esc(st.soll)})</span></div>
+      <div id="mob-time" style="font-family:'Archivo';font-weight:700;font-size:56px;margin:18px 0;color:var(--load)">${st.sec?fmtSec(st.sec):'0:00'}</div>
+      <div class="row" style="gap:8px">
+        <button class="gbtn" style="flex:1" onclick="prevGuided()" ${mob.i===0?'disabled style="flex:1;opacity:.4"':''}>Zurück</button>
+        <button class="primary" id="mob-toggle" style="flex:2" onclick="toggleGuided()">Start</button>
+        <button class="gbtn" style="flex:1" onclick="nextGuided()">Weiter</button>
+      </div>
+      ${next?`<div class="muted" style="font-size:12px;margin-top:14px">Danach: ${esc(next.name)} (Satz ${next.set}/${next.sets})</div>`:`<div class="muted" style="font-size:12px;margin-top:14px">Letzte Übung 🎉</div>`}
+      <button class="gbtn" style="width:100%;margin-top:14px" onclick="stopGuided()">Beenden</button>
+    </div>`);
+}
+function fmtSec(x){ return Math.floor(x/60)+':'+String(x%60).padStart(2,'0'); }
+function toggleGuided(){
+  mob.running=!mob.running;
+  const btn=document.getElementById('mob-toggle');
+  if(btn) btn.textContent=mob.running?'Pause':'Weiter läuft';
+  if(mob.running && !mob.t){
+    mob.t=setInterval(()=>{
+      const el=document.getElementById('mob-time');
+      if(!el){ clearInterval(mob.t); mob.t=null; return; } // Modal zu -> Timer stoppen
+      if(!mob.running) return;
+      const st=mob.steps[mob.i];
+      if(st.sec){
+        mob.remain--;
+        el.textContent=fmtSec(Math.max(0,mob.remain));
+        if(mob.remain<=0){ beep(1); autoNext(); }
+      }else{
+        mob.up++; el.textContent=fmtSec(mob.up); // Stoppuhr bei Wdh.-Übungen
+      }
+    },1000);
+  }
+}
+function autoNext(){
+  if(mob.i>=mob.steps.length-1){ finishGuided(); return; }
+  mob.i++; const keep=mob.t; renderGuided();
+  // Timer weiterlaufen lassen: nach Auto-Wechsel direkt starten
+  mob.running=true; const btn=document.getElementById('mob-toggle'); if(btn) btn.textContent='Pause';
+  if(!mob.t) mob.t=keep;
+}
+function nextGuided(){ if(mob.i>=mob.steps.length-1){ finishGuided(); } else { mob.i++; renderGuided(); } }
+function prevGuided(){ if(mob.i>0){ mob.i--; renderGuided(); } }
+function stopGuided(){ if(mob.t){clearInterval(mob.t);mob.t=null;} mob.running=false; closeModal(); if(mob.sessionId) openSessionDetail(mob.sessionId); }
+function finishGuided(){
+  if(mob.t){clearInterval(mob.t);mob.t=null;} mob.running=false;
+  beep(2);
+  const s=sessions.find(x=>x.id===mob.sessionId);
+  if(s&&s.exercises){
+    s.exercises.forEach(e=>{ if(!e.ist) e.ist=e.soll; }); // durchgeführt = Soll erfüllt (anpassbar)
+    persist(); renderCalendar(); renderMobility();
+  }
+  showModal(`<h3>Session geschafft 🎉</h3>
+    <p class="muted" style="line-height:1.5">Alle ${mob.steps.length} Sätze durch. Die Ist-Werte wurden auf Soll gesetzt — falls etwas anders lief, passe sie in der Detailansicht an.</p>
+    <button class="primary" style="width:100%" onclick="closeModal();openSessionDetail('${mob.sessionId}')">Zur Detailansicht</button>`);
 }
 
 function openProfile(){
@@ -1334,7 +1440,7 @@ async function submitWeekcheck(){
     messages.pop();
     messages.push({id:uid(),role:'assistant',text:opts.intro||'Hier dein Wochenplan:',weekPlan:opts.days||[]});
     setWeekcheckDone();
-    persist(); renderChat(); renderCalendar(); renderBadge();
+    persist(); renderChat(); renderCalendar(); renderBadge(); renderMobility();
   }catch(e){ messages.pop(); setStatus('chat-status','',e.message||'Wochenplanung fehlgeschlagen.'); }
 }
 async function aiPlanWeek(plan){
@@ -1355,20 +1461,82 @@ function applyWeekPlan(msgId){
     sessions.push({id:uid(),status:'planned',date:d.date,type:d.type,title:d.title,durationMin:d.durationMin,focus:d.reason,intensity:d.intensity});
   });
   m.weekPlanApplied=true;
-  persist(); renderChat(); renderCalendar(); renderBadge();
+  persist(); renderChat(); renderCalendar(); renderBadge(); renderMobility();
 }
 
 // ══════════════ Tabs & Init ══════════════
+// ── Mobility-Bereich (eigener Tab) ──
+function renderMobility(){
+  const el=document.getElementById('view-mobility'); if(!el)return;
+  const mobs=sessions.filter(s=>s.type==='mobility'&&!s.seed);
+  const planned=mobs.filter(s=>s.status==='planned').sort((a,b)=>a.date<b.date?-1:1);
+  const done=mobs.filter(s=>s.status==='done').sort((a,b)=>a.date>b.date?-1:1).slice(0,8);
+  const nextS=planned[0];
+  let html=`<div class="statecard" style="text-align:center">
+    <div style="font-size:11px;color:var(--load);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nächste Mobility-Session</div>`;
+  if(nextS){
+    const when=wochentag(nextS.date)+', '+parseLocal(nextS.date).toLocaleDateString('de-DE',{day:'numeric',month:'long'});
+    html+=`<div style="font-family:'Archivo';font-weight:700;font-size:19px">${esc(nextS.title)}</div>
+      <div class="muted" style="font-size:13px;margin:4px 0 14px">${when}${nextS.durationMin?' · '+nextS.durationMin+' min':''}</div>`;
+    html+= nextS.exercises&&nextS.exercises.length
+      ? `<button class="primary" style="width:100%" onclick="startGuided('${nextS.id}')">▶ Jetzt starten</button>
+         <button class="gbtn" style="width:100%;margin-top:8px" onclick="openSessionDetail('${nextS.id}')">Details & Übungen</button>`
+      : `<button class="primary" style="width:100%" onclick="openSessionDetail('${nextS.id}')">Workout ausarbeiten</button>`;
+  }else{
+    html+=`<p class="muted" style="margin:4px 0 14px">Keine Mobility-Session geplant.</p>`;
+  }
+  html+=`<button class="gbtn" style="width:100%;margin-top:8px" onclick="openNewMobility()">+ Neue Session</button></div>`;
+  if(planned.length>1){
+    html+=`<div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Weitere geplante</div>`;
+    planned.slice(1).forEach(s=>{ html+=mobRow(s); });
+  }
+  if(done.length){
+    html+=`<div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Erledigt</div>`;
+    done.forEach(s=>{ html+=mobRow(s); });
+  }
+  el.innerHTML=html;
+}
+function mobRow(s){
+  const done=s.status==='done';
+  const when=parseLocal(s.date).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+  return `<div class="card" style="border-left:3px solid ${done?'var(--done)':'var(--planned)'};cursor:pointer" onclick="openSessionDetail('${s.id}')">
+    <div class="row between">
+      <span style="font-weight:600;font-size:14.5px">${esc(s.title)}</span>
+      <span class="muted mono" style="font-size:12px">${when}${s.durationMin?' · '+s.durationMin+"'":''}</span>
+    </div>
+  </div>`;
+}
+let nmDur=30;
+function openNewMobility(){
+  nmDur=30;
+  showModal(`<h3>Neue Mobility-Session</h3>
+    <div class="field"><label>Dauer</label><div class="choices">
+      ${[15,20,30,45,60].map(d=>`<button type="button" class="chip ${d===30?'on':''}" onclick="nmSetDur(this,${d})">${d} min</button>`).join('')}
+    </div></div>
+    <div class="field"><label>Fokus (optional)</label><input id="nm-focus" type="text" placeholder="z.B. Hüfte & Sprunggelenk, nach dem Lauf…" style="width:100%;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px"></div>
+    <button class="primary" style="width:100%;margin-top:6px" onclick="createMobility()">Erstellen & ausarbeiten lassen</button>`);
+}
+function nmSetDur(btn,d){ nmDur=d; btn.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); btn.classList.add('on'); }
+function createMobility(){
+  const focus=(document.getElementById('nm-focus')?.value||'').trim();
+  const s={id:uid(),status:'planned',date:iso(today()),type:'mobility',title:focus?('Mobility: '+focus):'Mobility & Dehnen',durationMin:nmDur,intensity:'locker',focus:focus||undefined};
+  sessions.push(s); persist();
+  renderMobility(); renderCalendar(); renderBadge(); renderMobility();
+  openSessionDetail(s.id);   // Detailansicht öffnen (Dauer-Feld ist vorbelegt) …
+  genSessionDetails(s.id);   // … und direkt ausarbeiten lassen
+}
+
 function setTab(t){
   tab=t;
-  document.getElementById('view-kalender').classList.toggle('hidden',t!=='kalender');
-  document.getElementById('view-coach').classList.toggle('hidden',t!=='coach');
-  document.getElementById('tab-kalender').classList.toggle('on',t==='kalender');
-  document.getElementById('tab-coach').classList.toggle('on',t==='coach');
+  ['kalender','coach','mobility'].forEach(v=>{
+    document.getElementById('view-'+v).classList.toggle('hidden',t!==v);
+    document.getElementById('tab-'+v).classList.toggle('on',t===v);
+  });
   document.querySelector('.app-main').classList.toggle('chat-mode',t==='coach');
   if(t==='coach') renderChat();
+  if(t==='mobility') renderMobility();
 }
-function renderAll(){ renderBadge(); renderCalendar(); renderChat(); setTab('kalender'); }
+function renderAll(){ renderBadge(); renderCalendar(); renderChat(); renderMobility(); setTab('kalender'); }
 
 function seed(){
   const t=today();
