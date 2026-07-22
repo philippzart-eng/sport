@@ -1259,12 +1259,12 @@ function parseSoll(soll){
   const s=(soll||'').toLowerCase();
   const sides=/pro seite|je seite|pro richtung|je richtung|pro bein|je bein|pro arm|je arm/.test(s)?2:1;
   let m=s.match(/(\d+)\s*[×x*]\s*(\d+)\s*(min|sek|s)\b/);
-  if(m){const sec=m[3]==='min'?+m[2]*60:+m[2];return{sets:+m[1]*sides,sec};}
+  if(m){const sec=m[3]==='min'?+m[2]*60:+m[2];return{base:+m[1],sides,sets:+m[1]*sides,sec};}
   m=s.match(/(\d+)\s*(min|sek|s)\b/);
-  if(m){const sec=m[2]==='min'?+m[1]*60:+m[1];return{sets:1*sides,sec};}
+  if(m){const sec=m[2]==='min'?+m[1]*60:+m[1];return{base:1,sides,sets:1*sides,sec};}
   m=s.match(/(\d+)\s*[×x*]\s*(\d+)/);
-  if(m){return{sets:+m[1]*sides,sec:null,reps:+m[2]};}
-  return{sets:1*sides,sec:null};
+  if(m){return{base:+m[1],sides,sets:+m[1]*sides,sec:null,reps:+m[2]};}
+  return{base:1,sides,sets:1*sides,sec:null};
 }
 let mob={steps:[],i:0,remain:0,up:0,t:null,running:false,sessionId:null};
 function beep(n){
@@ -1280,13 +1280,22 @@ function beep(n){
 }
 function startGuided(id){
   const s=sessions.find(x=>x.id===id); if(!s||!s.exercises||!s.exercises.length)return;
+  // Rundenmodus (Zirkel): einmal durch alle Übungen, dann nächste Runde —
+  // statt alle Sätze derselben Übung direkt hintereinander.
+  const parsed=s.exercises.map((e,ei)=>({e,ei,p:parseSoll(e.soll)}));
+  const maxRounds=Math.max(...parsed.map(x=>x.p.base||1));
   mob.steps=[];
-  s.exercises.forEach((e,ei)=>{
-    const p=parseSoll(e.soll);
-    for(let k=1;k<=p.sets;k++) mob.steps.push({name:e.name,soll:e.soll,set:k,sets:p.sets,sec:p.sec,reps:p.reps,exIndex:ei});
-  });
+  for(let r=1;r<=maxRounds;r++){
+    parsed.forEach(({e,ei,p})=>{
+      if((p.base||1)>=r){
+        for(let side=1;side<=(p.sides||1);side++){
+          mob.steps.push({name:e.name,soll:e.soll,round:r,rounds:p.base||1,side:(p.sides||1)>1?side:0,sec:p.sec,reps:p.reps,exIndex:ei});
+        }
+      }
+    });
+  }
   if(!mob.steps.length)return;
-  mob.i=0; mob.sessionId=id; mob.running=false;
+  mob.i=0; mob.sessionId=id; mob.running=false; mob.rounds=maxRounds;
   if(mob.t){clearInterval(mob.t);mob.t=null;}
   renderGuided();
 }
@@ -1294,18 +1303,22 @@ function renderGuided(){
   const st=mob.steps[mob.i]; if(!st)return finishGuided();
   mob.remain=st.sec||0; mob.up=0; mob.running=false;
   const next=mob.steps[mob.i+1];
+  const sideTxt=st.side===1?' · linke Seite':st.side===2?' · rechte Seite':'';
+  const roundTxt=st.rounds>1?`Runde ${st.round}/${st.rounds}`:'';
+  const sub=[roundTxt, st.reps?st.reps+' Wdh.':''].filter(Boolean).join(' · ');
+  const nextSide=next&&next.side===1?' (links)':next&&next.side===2?' (rechts)':'';
   showModal(`
     <div style="text-align:center;padding:6px 0">
-      <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px">Übung ${mob.i+1} / ${mob.steps.length}</div>
-      <div style="font-family:'Archivo';font-weight:700;font-size:20px;margin:10px 0 2px">${esc(st.name)}</div>
-      <div class="muted" style="font-size:13px">Satz ${st.set}/${st.sets}${st.reps?' · '+st.reps+' Wdh.':''} <span style="color:var(--dim)">(${esc(st.soll)})</span></div>
+      <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px">Übung ${mob.i+1} / ${mob.steps.length}${mob.rounds>1?` · Runde ${st.round} von ${mob.rounds}`:''}</div>
+      <div style="font-family:'Archivo';font-weight:700;font-size:20px;margin:10px 0 2px">${esc(st.name)}${sideTxt?`<span style="color:var(--load)">${sideTxt}</span>`:''}</div>
+      <div class="muted" style="font-size:13px">${sub?sub+' ':''}<span style="color:var(--dim)">(${esc(st.soll)})</span></div>
       <div id="mob-time" style="font-family:'Archivo';font-weight:700;font-size:56px;margin:18px 0;color:var(--load)">${st.sec?fmtSec(st.sec):'0:00'}</div>
       <div class="row" style="gap:8px">
         <button class="gbtn" style="flex:1" onclick="prevGuided()" ${mob.i===0?'disabled style="flex:1;opacity:.4"':''}>Zurück</button>
         <button class="primary" id="mob-toggle" style="flex:2" onclick="toggleGuided()">Start</button>
         <button class="gbtn" style="flex:1" onclick="nextGuided()">Weiter</button>
       </div>
-      ${next?`<div class="muted" style="font-size:12px;margin-top:14px">Danach: ${esc(next.name)} (Satz ${next.set}/${next.sets})</div>`:`<div class="muted" style="font-size:12px;margin-top:14px">Letzte Übung 🎉</div>`}
+      ${next?`<div class="muted" style="font-size:12px;margin-top:14px">Danach: ${esc(next.name)}${nextSide}${next.round!==st.round?' — Runde '+next.round+' beginnt':''}</div>`:`<div class="muted" style="font-size:12px;margin-top:14px">Letzte Übung 🎉</div>`}
       <button class="gbtn" style="width:100%;margin-top:14px" onclick="stopGuided()">Beenden</button>
     </div>`);
 }
