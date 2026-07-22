@@ -1203,20 +1203,31 @@ async function exportBackup(){
   try{ await navigator.clipboard.writeText(data); copied=true; }catch(e){}
   showModal(`<h3>Backup exportieren</h3>
     <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">${copied?'✓ In die Zwischenablage kopiert.':'Kopieren nicht möglich — markiere den Text unten manuell.'} Speichere den Text z.B. in Notizen. In einer neuen App-Instanz: ⚙ → „Backup einspielen" → einfügen.</p>
-    <textarea readonly style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:12px;font-family:monospace" onclick="this.select()">${esc(data)}</textarea>`);
+    <textarea readonly autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:12px;font-family:monospace" onclick="this.select()">${esc(data)}</textarea>`);
 }
 function openImportBackup(){
   showModal(`<h3>Backup einspielen</h3>
     <p class="muted" style="margin-top:0;font-size:13px;line-height:1.5">Füge hier den Backup-Text ein. Achtung: ersetzt die aktuellen Daten dieser Instanz.</p>
-    <textarea id="import-data" placeholder="Backup-Text einfügen…" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:16px;font-family:monospace"></textarea>
+    <textarea id="import-data" placeholder="Backup-Text einfügen…" autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off" style="width:100%;min-height:120px;background:var(--panelSoft);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font-size:16px;font-family:monospace"></textarea>
     <div id="import-status"></div>
     <button class="primary" style="width:100%;margin-top:10px" onclick="importBackup()">Einspielen</button>`);
+}
+// iOS ersetzt beim Einfügen gern gerade Anführungszeichen durch typografische
+// („smart quotes") und schleust unsichtbare Zeichen ein — das macht JSON kaputt.
+// Diese Reparatur macht das rückgängig.
+function cleanJSONText(t){
+  return (t||'')
+    .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB\u2033]/g,'"')
+    .replace(/[\u2018\u2019\u201A\u2032]/g,"'")
+    .replace(/\u00A0/g,' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g,'')
+    .trim();
 }
 function importBackup(){
   const ta=document.getElementById('import-data');
   const st=document.getElementById('import-status');
   try{
-    const d=JSON.parse((ta.value||'').trim());
+    const d=JSON.parse(cleanJSONText(ta.value));
     if(!d || !Array.isArray(d.sessions)) throw new Error('Kein gültiges Backup.');
     sessions=d.sessions;
     if(Array.isArray(d.messages)) messages=d.messages;
